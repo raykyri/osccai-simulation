@@ -1,5 +1,6 @@
-const { kMeansClustering } = require('../../utils/kMeansClustering');
-const { kmeans } = require('ml-kmeans');
+import { kMeansClustering } from '../../utils/kMeansClustering.js';
+import { kmeans } from 'ml-kmeans';
+import { describe, it, expect, jest } from '@jest/globals';
 
 jest.mock('ml-kmeans', () => ({
   kmeans: jest.fn()
@@ -13,7 +14,7 @@ describe('kMeansClustering', () => {
   test('returns correct format of results', () => {
     const data = [[1, 2], [2, 3], [8, 8], [9, 9]];
     const k = 2;
-    
+
     kmeans.mockReturnValue({
       centroids: [[1.5, 2.5], [8.5, 8.5]],
       clusters: [0, 0, 1, 1]
@@ -41,7 +42,7 @@ describe('kMeansClustering', () => {
   test('handles empty clusters', () => {
     const data = [[1, 2], [2, 3], [8, 8], [9, 9]];
     const k = 3;
-    
+
     kmeans.mockReturnValue({
       centroids: [[1.5, 2.5], [8.5, 8.5], [0, 0]],
       clusters: [0, 0, 1, 1]
@@ -62,7 +63,7 @@ describe('kMeansClustering', () => {
   test('handles single-point clusters', () => {
     const data = [[1, 1], [2, 2], [10, 10]];
     const k = 3;
-    
+
     kmeans.mockReturnValue({
       centroids: [[1, 1], [2, 2], [10, 10]],
       clusters: [0, 1, 2]
@@ -79,7 +80,7 @@ describe('kMeansClustering', () => {
   test('correctly assigns points to clusters', () => {
     const data = [[1, 2], [2, 3], [8, 8], [9, 9]];
     const k = 2;
-    
+
     kmeans.mockReturnValue({
       centroids: [[1.5, 2.5], [8.5, 8.5]],
       clusters: [0, 0, 1, 1]

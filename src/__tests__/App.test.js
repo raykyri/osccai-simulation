@@ -1,6 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 import App from '../App';
+import { describe, it, expect, jest } from '@jest/globals';
 
 beforeEach(() => {
   global.toggleConsoleErrorSuppression(true);
@@ -16,7 +17,7 @@ test('App renders without crashing', () => {
 
 test('Console error suppression is working', () => {
   global.toggleConsoleErrorSuppression(false);
-  
+
   const mockConsoleError = jest.spyOn(console, 'error');
   console.error('Warning: XAxis: Some warning message');
   expect(mockConsoleError).toHaveBeenCalled();

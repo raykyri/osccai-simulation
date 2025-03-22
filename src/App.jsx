@@ -1,13 +1,13 @@
 import React, { useEffect, useCallback } from 'react';
-import { SimulationProvider, useSimulation } from './context/SimulationContext';
-import VoteMatrix from './components/VoteMatrix';
-import PCAProjection from './components/PCAProjection';
-import GroupAnalysis from './components/GroupAnalysis';
-import SimulationControls from './components/SimulationControls';
-import useVoteMatrix from './hooks/useVoteMatrix';
-import usePCA from './hooks/usePCA';
-import useGroupIdentification from './hooks/useGroupIdentification';
-import { debug } from './utils/debug';
+import { SimulationProvider, useSimulation } from './context/SimulationContext.jsx';
+import VoteMatrix from './components/VoteMatrix.jsx';
+import PCAProjection from './components/PCAProjection.jsx';
+import GroupAnalysis from './components/GroupAnalysis.jsx';
+import SimulationControls from './components/SimulationControls.jsx';
+import useVoteMatrix from './hooks/useVoteMatrix.js';
+import usePCA from './hooks/usePCA.js';
+import useGroupIdentification from './hooks/useGroupIdentification.js';
+import { debug } from './utils/debug.js';
 import './App.css';
 
 const SimulationContent = () => {

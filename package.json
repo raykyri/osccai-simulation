@@ -2,6 +2,7 @@
   "name": "osccai-simulation",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@testing-library/user-event": "^13.5.0",
     "ml-kmeans": "^6.0.0",
@@ -17,13 +18,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "jest --config=jest.config.js",
-    "test:watch": "jest --watch --config=jest.config.js",
-    "test:coverage": "jest --coverage --config=jest.config.js",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand --config=jest.config.js",
-    "test:silhouette": "jest src/__tests__/utils/silhouetteCoefficient.test.js --config=jest.config.js",
-    "cluster": "node -r @babel/register src/scripts/runClustering.js",
-    "cluster:debug": "node -r @babel/register src/scripts/runClustering.js --debug"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --config=jest.config.js",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --config=jest.config.js",
+    "test:debug": "node --inspect-brk --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --config=jest.config.js",
+    "test:silhouette": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/__tests__/utils/silhouetteCoefficient.test.js --config=jest.config.js",
+    "cluster": "node src/scripts/runClustering.js",
+    "cluster:debug": "node src/scripts/runClustering.js --debug"
   },
   "eslintConfig": {
     "extends": [

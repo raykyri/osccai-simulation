@@ -1,5 +1,5 @@
 import { kmeans } from 'ml-kmeans';
-import { debug } from './debug';
+import { debug } from './debug.js';
 
 function kMeansClustering(data, k) {
   debug("Entering kMeansClustering", { data, k });
@@ -26,8 +26,3 @@ function kMeansClustering(data, k) {
 }
 
 export { kMeansClustering };
-
-// For CommonJS compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { kMeansClustering };
-}

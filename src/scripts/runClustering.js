@@ -1,5 +1,5 @@
-const { findOptimalClusters } = require('../utils/silhouetteCoefficient.js');
-const { debug, DEBUG } = require('../utils/debug.js');
+import { findOptimalClusters } from '../utils/silhouetteCoefficient.js';
+import { debug, DEBUG } from '../utils/debug.js';
 
 // If running from command line, pass arguments to debug module
 if (typeof process !== 'undefined' && process.argv) {

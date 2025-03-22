@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { debug } from '../utils/debug';
+import { debug } from '../utils/debug.js';
 
 const PROPORTIONAL_ADJUSTMENT_FACTOR = 3/4;
 

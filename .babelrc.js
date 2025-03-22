@@ -1,9 +1,7 @@
-module.exports = {
+export default {
   presets: [
-    ['@babel/preset-env', { targets: { node: 'current' } }],
-    '@babel/preset-react'
+    ["@babel/preset-env", { targets: { node: "current" } }],
+    "@babel/preset-react",
   ],
-  plugins: [
-    '@babel/plugin-proposal-private-property-in-object'
-  ]
-};
+  plugins: ["@babel/plugin-proposal-private-property-in-object"],
+}

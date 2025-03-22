@@ -1,4 +1,4 @@
-export let DEBUG = false;
+let DEBUG = false;
 
 // Check if we're in a Node.js environment
 if (typeof process !== 'undefined' && process.argv) {
@@ -9,8 +9,10 @@ if (typeof process !== 'undefined' && process.argv) {
   DEBUG = window.location.search.includes('debug=true') || window.DEBUG === true;
 }
 
-export function debug(...args) {
+function debug(...args) {
   if (DEBUG) {
     console.log(...args);
   }
 }
+
+export { DEBUG, debug };

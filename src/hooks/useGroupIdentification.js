@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { kMeansClustering } from '../utils/kMeansClustering';
-import { debug } from '../utils/debug';
+import { kMeansClustering } from '../utils/kMeansClustering.js';
+import { debug } from '../utils/debug.js';
 
 const useGroupIdentification = (pcaProjection, kMeansK) => {
   return useCallback(() => {

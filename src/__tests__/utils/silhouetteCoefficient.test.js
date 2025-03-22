@@ -1,6 +1,7 @@
-const { findOptimalClusters } = require('../../utils/silhouetteCoefficient');
-const kMeansClusteringModule = require('../../utils/kMeansClustering');
-const { debug } = require('../../utils/debug');
+import { findOptimalClusters } from '../../utils/silhouetteCoefficient.js';
+import * as kMeansClusteringModule from '../../utils/kMeansClustering.js';
+import { debug } from '../../utils/debug.js';
+import { describe, it, expect, jest } from '@jest/globals';
 
 jest.spyOn(kMeansClusteringModule, 'kMeansClustering').mockImplementation((data, k) => {
   console.log('Mock kMeansClustering called with:', data, k);
