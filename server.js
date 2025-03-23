@@ -7,6 +7,10 @@ const app = express();
 const PORT = 3001;
 const TARGET_URL = new URL('https://pol.is');
 
+// Simple in-memory cache
+const cache = new Map();
+const CACHE_DURATION = 30 * 1000; // 30 seconds in milliseconds
+
 // Enable CORS
 app.use(cors());
 
@@ -37,8 +41,20 @@ app.use('/proxy', async (req, res) => {
     const path = req.url.replace(/^\/proxy/, '') || '/';
     
     const url = new URL(path, TARGET_URL).toString();
-
+    
     console.log(`Proxying request to: ${url}`);
+
+    // Check cache for GET requests
+    if (req.method === 'GET') {
+      const cacheKey = url;
+      const cachedResponse = cache.get(cacheKey);
+      
+      if (cachedResponse && cachedResponse.expiry > Date.now()) {
+        console.log('Serving response from cache');
+        res.status(cachedResponse.status);
+        return res.send(cachedResponse.data);
+      }
+    }
 
     const response = await fetch(url);
     
@@ -50,6 +66,17 @@ app.use('/proxy', async (req, res) => {
     const data = await response.text();
     console.log('Data fetched successfully!');
     console.log(`First 200 characters of data: ${data.substring(0, 200)}...`);
+    
+    // Cache the response for GET requests
+    if (req.method === 'GET') {
+      const cacheKey = url;
+      cache.set(cacheKey, {
+        data,
+        status: response.status,
+        expiry: Date.now() + CACHE_DURATION
+      });
+      console.log(`Cached response for ${cacheKey}`);
+    }
     
     res.status(response.status);
     res.send(data);
