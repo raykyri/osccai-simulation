@@ -137,6 +137,7 @@
 .matrix-cell.agree { background-color: var(--agree-color); }
 .matrix-cell.disagree { background-color: var(--disagree-color); }
 .matrix-cell.pass { background-color: var(--pass-color); }
+.matrix-cell.none { background-color: var(--none-color); }
 
 .matrix-row.highlighted .matrix-cell {
   border: 2px solid yellow;
@@ -190,7 +191,8 @@
 :root {
   --agree-color: green;
   --disagree-color: red;
-  --pass-color: gray;
+  --pass-color: #999;
+  --none-color: #ccc;
 }
 
 .actual-vote-bar {

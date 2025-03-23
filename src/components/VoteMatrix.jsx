@@ -77,7 +77,7 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
                       {row.map((vote, j) => (
                         <div
                           key={j}
-                          className={`matrix-cell ${vote === 1 ? 'agree' : vote === -1 ? 'disagree' : 'pass'} ${highlightedComment === j ? 'highlighted' : ''}`}
+                          className={`matrix-cell ${vote === 1 ? 'agree' : vote === -1 ? 'disagree' : vote === 0 ? 'pass' : 'none'} ${highlightedComment === j ? 'highlighted' : ''}`}
                           onClick={() => handleVoteChange(i, j)} // Handle cell click
                         />
                       ))}

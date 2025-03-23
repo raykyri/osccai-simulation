@@ -1,3 +1,51 @@
+/**
+ * Polis Simulation App
+ *
+ * Data Flow Overview:
+ * ------------------
+ * 1. Data Loading
+ *    - User inputs a URL for Polis data exports (or uses default)
+ *    - App fetches three CSV files:
+ *      a) participant-votes.csv - The vote matrix showing all votes
+ *      b) comments.csv - The text of all comments
+ *      c) votes.csv - The event log of individual votes
+ *    - CSV data is parsed into structured objects with Papa Parse
+ *
+ * 2. Vote Matrix Construction
+ *    - Raw vote data is transformed into a matrix where:
+ *      * Rows represent participants
+ *      * Columns represent comments
+ *      * Values are: 1 (agree), -1 (disagree), 0 (pass), or null (no vote)
+ *    - Matrix is built using the votes log to preserve the distinction between
+ *      explicit passes and no votes
+ *
+ * 3. PCA Projection
+ *    - Vote matrix is analyzed using Principal Component Analysis (PCA)
+ *    - Participants are projected into a 2D space based on voting patterns
+ *    - This allows visualization of participant clusters based on opinion similarity
+ *
+ * 4. Group Identification
+ *    - K-means clustering is applied to the PCA projection
+ *    - Groups of similar-voting participants are identified
+ *    - Silhouette coefficient analysis helps determine optimal number of groups
+ *
+ * 5. Consensus Analysis
+ *    - Overall consensus is calculated for each comment
+ *    - Group-specific consensus is calculated for each comment within each group
+ *    - Comments with high consensus (60%+) are highlighted
+ *
+ * 6. UI Rendering
+ *    - Vote matrix visualization shows all votes in a heatmap
+ *    - PCA projection shows participants in 2D space with group coloring
+ *    - Group analysis shows statistics about each identified group
+ *    - Consensus visualizations show agreement patterns overall and by group
+ *
+ * Alternative Mode:
+ * ---------------
+ * Instead of using real data, the app can generate random vote matrices
+ * with configurable parameters for simulation purposes.
+ */
+
 import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { SimulationProvider, useSimulation } from './context/SimulationContext.jsx';
 import VoteMatrix from './components/VoteMatrix.jsx';
@@ -87,6 +135,32 @@ const parseCommentsCSV = (csvString) => {
   return comments;
 };
 
+const parseVotesLogCSV = (csvString) => {
+  const parseResult = Papa.parse(csvString, {
+    header: true,
+    skipEmptyLines: true
+  });
+
+  // Create a map of participant ID to their votes
+  const participantVotes = {};
+
+  parseResult.data.forEach(row => {
+    const participantId = row['voter-id'];
+    const commentId = row['comment-id'];
+    const vote = row['vote'];
+
+    if (!participantVotes[participantId]) {
+      participantVotes[participantId] = {};
+    }
+
+    participantVotes[participantId][commentId] = parseInt(vote, 10);
+  });
+
+  console.log(participantVotes)
+
+  return participantVotes;
+};
+
 const SimulationContent = () => {
   const {
     participants,
@@ -124,7 +198,7 @@ const SimulationContent = () => {
   const [commentTexts, setCommentTexts] = useState([]);
   const [topConsensusComments, setTopConsensusComments] = useState([]);
   const [groupConsensusData, setGroupConsensusData] = useState([]);
-  
+
   // Add a state to track initialization
   const [initialized, setInitialized] = useState(false);
 
@@ -193,16 +267,32 @@ const SimulationContent = () => {
       console.log('Data fetched successfully');
 
       // Parse CSV to JSON with our custom parsers
-      const { metadata, data: voteData } = parseVoteMatrixCSV(votesData);
+      const { metadata, data: originalVoteData } = parseVoteMatrixCSV(votesData);
       const commentData = parseCommentsCSV(commentsData);
+      const participantVotes = parseVotesLogCSV(votesLogData);
 
-      // console.log("Participant metadata:", metadata);
-      // console.log("Vote data:", voteData);
-      // console.log("Comment data:", commentData);
-      console.log("Votes log data:", votesLogData);
+      // Create lookup maps for participants and comments
+      const participantIdMap = metadata.map(p => p.participant);
+      const commentIdMap = commentData.map(c => c.id);
 
-      // Set the vote matrix and comment texts with the imported data
-      setVoteMatrix(voteData);
+      // Create a new vote matrix with null values by default
+      const updatedVoteMatrix = Array(participantIdMap.length).fill().map(() =>
+        Array(commentIdMap.length).fill(null)
+      );
+
+      // Fill in the vote matrix based on the votes log
+      participantIdMap.forEach((participantId, participantIndex) => {
+        if (participantVotes[participantId]) {
+          commentIdMap.forEach((commentId, commentIndex) => {
+            if (participantVotes[participantId][commentId] !== undefined) {
+              updatedVoteMatrix[participantIndex][commentIndex] = participantVotes[participantId][commentId];
+            }
+          });
+        }
+      });
+
+      // Set the updated vote matrix with nulls for unvoted items
+      setVoteMatrix(updatedVoteMatrix);
       setCommentTexts(commentData);
       setVotesLogData(votesLogData);
 
@@ -453,24 +543,24 @@ const SimulationContent = () => {
   return (
     <div className="App">
       <h1>Polis Simulation</h1>
-      
+
       {/* Tabs UI */}
       <div className="tabs-container">
         <div className="tabs">
-          <button 
+          <button
             className={`tab ${activeTab === 'import' ? 'active' : ''}`}
             onClick={() => setActiveTab('import')}
           >
             Import Data
           </button>
-          <button 
+          <button
             className={`tab ${activeTab === 'random' ? 'active' : ''}`}
             onClick={() => setActiveTab('random')}
           >
             Simulate Randomized Voters
           </button>
         </div>
-        
+
         {/* Tab content */}
         <div className="tab-content">
           {activeTab === 'import' && (
@@ -499,7 +589,7 @@ const SimulationContent = () => {
               </button>
             </div>
           )}
-          
+
           {activeTab === 'random' && (
             <div className="random-tab">
               <SimulationControls />
@@ -510,7 +600,7 @@ const SimulationContent = () => {
           )}
         </div>
       </div>
-      
+
       {/* <button onClick={handleReset}>Reset</button> */}
       <div className="data-source-indicator" style={{ marginBottom: '12px', fontStyle: 'italic', color: '#666' }}>
         {usingImportedData
@@ -576,7 +666,7 @@ const SimulationContent = () => {
 
       <div className="top-overall" style={{ margin: '0 auto' }}>
         <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
-        <ConsensusBarChart 
+        <ConsensusBarChart
           comments={topConsensusComments}
           commentTexts={commentTexts}
         />
