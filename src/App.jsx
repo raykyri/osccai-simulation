@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { SimulationProvider, useSimulation } from './context/SimulationContext.jsx';
 import VoteMatrix from './components/VoteMatrix.jsx';
 import PCAProjection from './components/PCAProjection.jsx';
@@ -14,18 +14,18 @@ import './App.css';
 
 const parseCSV = (csvString) => {
   // Use Papa Parse to parse the CSV properly
-  const parseResult = Papa.parse(csvString, { 
+  const parseResult = Papa.parse(csvString, {
     header: true,
     skipEmptyLines: true
   });
-  
+
   // Extract headers from the parse results
   const headers = parseResult.meta.fields;
-   
+
   // Initialize return objects
   const metadata = [];
   const data = [];
-  
+
   // Process each row
   parseResult.data.forEach(row => {
     // Extract metadata (first 6 columns)
@@ -38,7 +38,7 @@ const parseCSV = (csvString) => {
       'n-disagree': parseInt(row['n-disagree']) || 0
     };
     metadata.push(participantMetadata);
-    
+
     // Extract vote data (columns after the first 6)
     const voteData = headers.slice(6).map(header => {
       const vote = row[header];
@@ -47,10 +47,10 @@ const parseCSV = (csvString) => {
       if (vote === '-1') return -1;
       return 0;
     });
-    
+
     data.push(voteData);
   });
-  
+
   return { metadata, data };
 };
 
@@ -60,7 +60,7 @@ const parseCommentsCSV = (csvString) => {
     header: true,
     skipEmptyLines: true
   });
-  
+
   // Map the parsed data to our comment structure
   const comments = parseResult.data.map(row => ({
     timestamp: row['timestamp'] || '',
@@ -72,17 +72,17 @@ const parseCommentsCSV = (csvString) => {
     moderated: row['moderated'] || '',
     text: row['comment-body'] || ''
   }));
-  
-  // Sort comments by ID 
+
+  // Sort comments by ID
   comments.sort((a, b) => {
     // If IDs are numeric, convert to numbers for comparison
     const idA = isNaN(Number(a.id)) ? a.id : Number(a.id);
     const idB = isNaN(Number(b.id)) ? b.id : Number(b.id);
-    
+
     // Sort in ascending order
     return idA > idB ? 1 : idA < idB ? -1 : 0;
   });
-  
+
   return comments;
 };
 
@@ -121,6 +121,7 @@ const SimulationContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [usingImportedData, setUsingImportedData] = useState(false);
   const [commentTexts, setCommentTexts] = useState([]);
+  const [topConsensusComments, setTopConsensusComments] = useState([]);
 
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
@@ -146,11 +147,11 @@ const SimulationContent = () => {
 
     // Calculate the comments.csv URL based on the participant-votes.csv URL
     const commentsUrl = dataUrl.replace('participant-votes.csv', 'comments.csv');
-    
+
     // Helper function to handle proxy URL transformation
     const getProxiedUrl = (url) => {
-      return url.startsWith("https://pol.is/") ? 
-        url.replace("https://pol.is/", "http://localhost:3001/proxy/") : 
+      return url.startsWith("https://pol.is/") ?
+        url.replace("https://pol.is/", "http://localhost:3001/proxy/") :
         url;
     };
 
@@ -177,7 +178,7 @@ const SimulationContent = () => {
       // Parse CSV to JSON with our custom parsers
       const { metadata, data: voteData } = parseCSV(votesData);
       const commentData = parseCommentsCSV(commentsData);
-      
+
       console.log("Participant metadata:", metadata);
       console.log("Vote data:", voteData);
       console.log("Comment data:", commentData);
@@ -185,7 +186,7 @@ const SimulationContent = () => {
       // Set the vote matrix and comment texts with the imported data
       setVoteMatrix(voteData);
       setCommentTexts(commentData);
-      
+
       // Mark that we're using imported data
       setUsingImportedData(true);
 
@@ -222,8 +223,8 @@ const SimulationContent = () => {
     if (!usingImportedData) {
       generateNewVoteMatrix();
     }
-  }, [participants, comments, agreePercentage, disagreePercentage, 
-      consensusGroups, groupSizes, groupSimilarity, 
+  }, [participants, comments, agreePercentage, disagreePercentage,
+      consensusGroups, groupSizes, groupSimilarity,
       generateNewVoteMatrix, usingImportedData]);
 
   useEffect(() => {
@@ -240,6 +241,66 @@ const SimulationContent = () => {
       setGroups(newGroups);
     }
   }, [pcaProjection, identifyGroups, setGroups]);
+
+  useEffect(() => {
+    // Only calculate if we have vote data
+    if (!voteMatrix || voteMatrix.length === 0 || !voteMatrix[0]) {
+      setTopConsensusComments([]);
+      return;
+    }
+    
+    const commentCount = voteMatrix[0].length;
+    const participantCount = voteMatrix.length;
+    const consensusThreshold = 0.6; // 60% threshold
+    const consensusMinimumComments = 4;
+    
+    const consensusData = [];
+    
+    // For each comment, calculate percentage of agreeing and disagreeing votes
+    for (let j = 0; j < commentCount; j++) {
+      let agrees = 0;
+      let disagrees = 0;
+      
+      for (let i = 0; i < participantCount; i++) {
+        if (voteMatrix[i][j] === 1) {
+          agrees++;
+        } else if (voteMatrix[i][j] === -1) {
+          disagrees++;
+        }
+      }
+
+      // Total number of votes for this comment (excluding passes)
+      const totalVotes = agrees + disagrees;
+
+      if (totalVotes < consensusMinimumComments) continue;
+      
+      const agreePercent = agrees / totalVotes;
+      const disagreePercent = disagrees / totalVotes;
+      
+      // Check if either percentage meets our threshold
+      if (agreePercent >= consensusThreshold || disagreePercent >= consensusThreshold) {
+        consensusData.push({
+          commentId: j,
+          commentText: commentTexts?.[j]?.text || `Comment ${j + 1}`,
+          agreePercent,
+          disagreePercent,
+          consensusType: agreePercent >= disagreePercent ? 'agree' : 'disagree',
+          consensusPercent: Math.max(agreePercent, disagreePercent),
+          totalVotes: totalVotes, // Add this to track total votes
+          agrees: agrees,         // Store the number of agree votes
+          disagrees: disagrees    // Store the number of disagree votes
+        });
+      }
+    }
+    
+    // Sort by total vote count (descending) rather than consensus percentage
+    const topConsensus = consensusData
+      .sort((a, b) => b.totalVotes - a.totalVotes)
+      .slice(0, 10);
+    topConsensus.reverse()
+    
+    setTopConsensusComments(topConsensus);
+  }, [voteMatrix, commentTexts]); // Dependencies for this effect
 
   const handleReset = () => {
     setUsingImportedData(false);
@@ -287,7 +348,7 @@ const SimulationContent = () => {
             </thead>
             <tbody>
               {commentTexts.map((comment, index) => (
-                <tr key={index} 
+                <tr key={index}
                     onClick={() => highlightComment(index)}
                     className={highlightedComment === index ? 'highlighted-comment' : ''}>
                   <td>{comment.id}</td>
@@ -306,8 +367,8 @@ const SimulationContent = () => {
       <SimulationControls />
       <button onClick={handleReset}>Reset</button>
       <div className="data-source-indicator" style={{ marginBottom: '12px', fontStyle: 'italic', color: '#666' }}>
-        {usingImportedData 
-          ? `Currently showing imported data from CSV file (${voteMatrix ? voteMatrix.length : 0} participants)` 
+        {usingImportedData
+          ? `Currently showing imported data from CSV file (${voteMatrix ? voteMatrix.length : 0} participants)`
           : 'Currently showing randomly generated data'}
       </div>
 
@@ -335,6 +396,65 @@ const SimulationContent = () => {
           silhouetteCoefficients={silhouetteCoefficients}
           bestK={bestK}
         />
+      </div>
+      <div className="top-overall" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
+        {topConsensusComments.length === 0 ? (
+          <div>No comments with 60% or higher consensus</div>
+        ) : (
+          <div className="consensus-chart">
+            <div className="consensus-bars">
+              {topConsensusComments.map((comment) => (
+                <div key={comment.commentId} className="consensus-bar-container">
+                  <div className="consensus-label">
+                    <Tippy 
+                      content={comment.commentText}
+                      placement="left"
+                      arrow={true}
+                      animation="fade"
+                      duration={100}
+                      delay={[0, 0]}
+                      zIndex={99999}
+                    >
+                      <div 
+                        className="comment-id-text"
+                        onClick={() => highlightComment(comment.commentId)}
+                      >
+                        {commentTexts?.[comment.commentId]?.id || ''}
+                      </div>
+                    </Tippy>
+                    <div 
+                      className="comment-text-preview"
+                      onClick={() => highlightComment(comment.commentId)}
+                    >
+                      {comment.commentText}
+                    </div>
+                  </div>
+                  <div className="consensus-bar-wrapper">
+                    <div 
+                      className={`consensus-bar ${comment.consensusType}`}
+                      style={{ 
+                        width: `${comment.consensusPercent * 100}%`,
+                      }}
+                    >
+                      {Math.round(comment.consensusPercent * 100)}%
+                    </div>
+                  </div>
+                  <div className="consensus-stats">
+                    <span className="vote-count">{comment.totalVotes} votes</span>
+                    <span className="consensus-type">
+                      {comment.consensusType === 'agree' ? 
+                        `${comment.agrees} agree` : 
+                        `${comment.disagrees} disagree`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="top-by-groups">
       </div>
       <div className="group-aware-consensus">
         <h2>Group-Aware Consensus</h2>

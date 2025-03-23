@@ -73,10 +73,8 @@ export function findOptimalClusters(points, startK = 2, endK = 9) {
 
   for (let k = startK; k <= maxK; k++) {
     debug(`Attempting kMeansClustering with k=${k}`);
-    console.log(`About to call kMeansClustering with k=${k}`);
     try {
       const clusters = kMeansClustering(points, k);
-      console.log(`kMeansClustering returned:`, clusters);
       debug(`Clusters returned by kMeansClustering:`, clusters);
 
       if (!clusters || !Array.isArray(clusters)) {

@@ -289,3 +289,93 @@
 .copy-button:hover {
   background-color: #45a049;
 }
+
+/** consensus **/
+
+.consensus-stats {
+  width: 150px;
+  padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9em;
+}
+
+.vote-count {
+  font-weight: bold;
+}
+
+.comment-label-text {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.consensus-chart {
+  margin: 15px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.consensus-bars {
+  margin-top: 10px;
+}
+
+.consensus-bar-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.consensus-label {
+  width: 120px;
+  text-align: right;
+  padding-right: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comment-label-text {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.comment-label-text:hover {
+  text-decoration: underline;
+}
+
+.consensus-bar-wrapper {
+  flex-grow: 1;
+  height: 25px;
+  background-color: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.consensus-bar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  color: white;
+  font-weight: bold;
+  transition: width 0.3s ease;
+}
+
+.consensus-bar.agree {
+  background-color: #4caf50;
+}
+
+.consensus-bar.disagree {
+  background-color: #f44336;
+}
+
+.consensus-type {
+  width: 100px;
+  padding-left: 10px;
+  font-size: 0.9em;
+}

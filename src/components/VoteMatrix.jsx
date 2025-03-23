@@ -52,7 +52,6 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
               <div className="column-labels-container">
                 <div className="column-labels">
                   {voteMatrix[0].map((_, j) => (
-                    
                       <div
                         className={`column-label ${highlightedComment === j ? 'highlighted' : ''}`}
                       >
@@ -62,9 +61,8 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
                           placement="top"
                           arrow={true}
                           animation="fade"
-                          duration={200}
-                          delay={[300, 0]} // Show after 300ms, hide immediately
-                          interactive={true} // Makes the tooltip interactive if needed
+                          duration={100}
+                          delay={[0, 0]}
                           zIndex={99999}
                         ><div>{j + 1}</div></Tippy>
                       </div>
