@@ -222,7 +222,7 @@ const SimulationControls = () => {
 
   return (
     <div>
-      <h2>Simulation Controls</h2>
+      <h2>Generate Randomized Votes</h2>
       <div>
         <label htmlFor="participants">Participants: {tempParticipants}</label>
         <input

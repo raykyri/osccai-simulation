@@ -122,6 +122,7 @@ const SimulationContent = () => {
   const [usingImportedData, setUsingImportedData] = useState(false);
   const [commentTexts, setCommentTexts] = useState([]);
   const [topConsensusComments, setTopConsensusComments] = useState([]);
+  const [groupConsensusData, setGroupConsensusData] = useState([]);
 
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
@@ -248,19 +249,19 @@ const SimulationContent = () => {
       setTopConsensusComments([]);
       return;
     }
-    
+
     const commentCount = voteMatrix[0].length;
     const participantCount = voteMatrix.length;
     const consensusThreshold = 0.6; // 60% threshold
     const consensusMinimumComments = 4;
-    
+
     const consensusData = [];
-    
+
     // For each comment, calculate percentage of agreeing and disagreeing votes
     for (let j = 0; j < commentCount; j++) {
       let agrees = 0;
       let disagrees = 0;
-      
+
       for (let i = 0; i < participantCount; i++) {
         if (voteMatrix[i][j] === 1) {
           agrees++;
@@ -273,10 +274,10 @@ const SimulationContent = () => {
       const totalVotes = agrees + disagrees;
 
       if (totalVotes < consensusMinimumComments) continue;
-      
+
       const agreePercent = agrees / totalVotes;
       const disagreePercent = disagrees / totalVotes;
-      
+
       // Check if either percentage meets our threshold
       if (agreePercent >= consensusThreshold || disagreePercent >= consensusThreshold) {
         consensusData.push({
@@ -292,15 +293,80 @@ const SimulationContent = () => {
         });
       }
     }
-    
+
     // Sort by total vote count (descending) rather than consensus percentage
     const topConsensus = consensusData
       .sort((a, b) => b.totalVotes - a.totalVotes)
       .slice(0, 10);
     topConsensus.reverse()
-    
+
     setTopConsensusComments(topConsensus);
   }, [voteMatrix, commentTexts]); // Dependencies for this effect
+
+  useEffect(() => {
+    // Skip calculations if no groups or no vote matrix
+    if (!groups || groups.length === 0 ||
+        !voteMatrix || voteMatrix.length === 0 || !voteMatrix[0]) {
+      setGroupConsensusData([]);
+      return;
+    }
+
+    const consensusThreshold = 0.6; // 60% threshold
+    const consensusMinimumComments = 3; // Lower minimum for groups
+    const commentCount = voteMatrix[0].length;
+
+    // Calculate consensus for each group
+    const newGroupConsensusData = groups.map(group => {
+      const groupParticipantIndices = group.points || [];
+      const consensusData = [];
+
+      // For each comment, calculate percentage of agreeing and disagreeing votes
+      for (let j = 0; j < commentCount; j++) {
+        let agrees = 0;
+        let disagrees = 0;
+
+        // Only consider votes from participants in this group
+        for (let i = 0; i < groupParticipantIndices.length; i++) {
+          const participantIndex = groupParticipantIndices[i];
+          if (voteMatrix[participantIndex][j] === 1) {
+            agrees++;
+          } else if (voteMatrix[participantIndex][j] === -1) {
+            disagrees++;
+          }
+        }
+
+        // Total number of votes for this comment from this group
+        const totalVotes = agrees + disagrees;
+
+        if (totalVotes < consensusMinimumComments) continue;
+
+        const agreePercent = agrees / totalVotes;
+        const disagreePercent = disagrees / totalVotes;
+
+        // Check if either percentage meets our threshold
+        if (agreePercent >= consensusThreshold || disagreePercent >= consensusThreshold) {
+          consensusData.push({
+            commentId: j,
+            commentText: commentTexts?.[j]?.text || `Comment ${j + 1}`,
+            agreePercent,
+            disagreePercent,
+            consensusType: agreePercent >= disagreePercent ? 'agree' : 'disagree',
+            consensusPercent: Math.max(agreePercent, disagreePercent),
+            totalVotes: totalVotes,
+            agrees: agrees,
+            disagrees: disagrees
+          });
+        }
+      }
+
+      // Sort by total vote count (descending)
+      return consensusData
+        .sort((a, b) => b.totalVotes - a.totalVotes)
+        .slice(0, 5); // Show top 5 for each group to keep it manageable
+    });
+
+    setGroupConsensusData(newGroupConsensusData);
+  }, [groups, voteMatrix, commentTexts]); // Dependencies for this effect
 
   const handleReset = () => {
     setUsingImportedData(false);
@@ -309,7 +375,8 @@ const SimulationContent = () => {
 
   return (
     <div className="App">
-      <h1>Import Data</h1>
+      <h1>Polis Simulation</h1>
+      <h2>Import Data</h2>
       <p>
         Enter the raw data export to analyze
         <div style={{ fontSize: "80%", color: "#666", marginTop: 2 }}>
@@ -335,7 +402,7 @@ const SimulationContent = () => {
 
       {/* Comments Table */}
       {usingImportedData && commentTexts && commentTexts.length > 0 && (
-        <div className="comments-table-container" style={{ marginBottom: '20px', maxHeight: '300px', overflow: 'scroll', maxWidth: '800px', border: '1px solid #ccc', margin: '20px auto' }}>
+        <div className="comments-table-container" style={{ marginBottom: '20px', maxHeight: '200px', overflow: 'scroll', maxWidth: '800px', border: '1px solid #ccc', margin: '20px auto' }}>
           <table className="comments-table">
             <thead>
               <tr>
@@ -363,60 +430,6 @@ const SimulationContent = () => {
         </div>
       )}
 
-      <div className="top-overall" style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
-        {topConsensusComments.length === 0 ? (
-          <div>No comments with 60% or higher consensus</div>
-        ) : (
-          <div className="consensus-chart">
-            <div className="consensus-bars">
-              {topConsensusComments.map((comment) => (
-                <div key={comment.commentId} className="consensus-bar-container">
-                  <div className="consensus-label">
-                    <Tippy 
-                      content={comment.commentText}
-                      placement="left"
-                      arrow={true}
-                      animation="fade"
-                      duration={100}
-                      delay={[0, 0]}
-                      zIndex={99999}
-                    >
-                      <div 
-                        className="comment-text-preview"
-                        onClick={() => highlightComment(comment.commentId)}
-                      >
-                        <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Empty Comment'}: </span>
-                        {comment.commentText}
-                      </div>
-                    </Tippy>
-                  </div>
-                  <div className="consensus-bar-wrapper">
-                    <div 
-                      className={`consensus-bar ${comment.consensusType}`}
-                      style={{ 
-                        width: `${comment.consensusPercent * 100}%`,
-                      }}
-                    >
-                      {Math.round(comment.consensusPercent * 100)}%
-                    </div>
-                  </div>
-                  <div className="consensus-stats">
-                    <span className="vote-count">{comment.totalVotes} votes</span>
-                    <span className="consensus-type">
-                      {comment.consensusType === 'agree' ? 
-                        `${comment.agrees} agree` : 
-                        `${comment.disagrees} disagree`}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <h1>Vote Matrix and PCA Simulation</h1>
       <SimulationControls />
       <button onClick={handleReset}>Reset</button>
       <div className="data-source-indicator" style={{ marginBottom: '12px', fontStyle: 'italic', color: '#666' }}>
@@ -450,7 +463,135 @@ const SimulationContent = () => {
           bestK={bestK}
         />
       </div>
-      <div className="top-by-groups">
+
+      <div className="top-overall" style={{ margin: '0 auto' }}>
+        <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
+        {topConsensusComments.length === 0 ? (
+          <div>No comments with 60% or higher consensus</div>
+        ) : (
+          <div className="consensus-chart" style={{ maxWidth: '800px', maxHeight: "200px", overflow: "scroll" }}>
+            <div className="consensus-bars">
+              {topConsensusComments.map((comment) => (
+                <div key={comment.commentId} className="consensus-bar-container">
+                  <div className="consensus-label">
+                    <Tippy
+                      content={comment.commentText}
+                      placement="left"
+                      arrow={true}
+                      animation="fade"
+                      duration={100}
+                      delay={[0, 0]}
+                      zIndex={99999}
+                    >
+                      <div
+                        className="comment-text-preview"
+                        onClick={() => highlightComment(comment.commentId)}
+                      >
+                        <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
+                        {comment.commentText}
+                      </div>
+                    </Tippy>
+                  </div>
+                  <div className="consensus-bar-wrapper">
+                    <div
+                      className={`consensus-bar ${comment.consensusType}`}
+                      style={{
+                        width: `${comment.consensusPercent * 100}%`,
+                      }}
+                    >
+                      {Math.round(comment.consensusPercent * 100)}%
+                    </div>
+                  </div>
+                  <div className="consensus-stats">
+                    <span className="vote-count">{comment.totalVotes} votes</span>
+                    <span className="consensus-type">
+                      {comment.consensusType === 'agree' ?
+                        `${comment.agrees} agree` :
+                        `${comment.disagrees} disagree`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="top-by-groups" style={{ maxWidth: '800px', margin: '20px auto' }}>
+        <h2>Comments with 60%+ Consensus by Group</h2>
+
+        {groups.length === 0 ? (
+          <div>No groups identified yet</div>
+        ) : (
+          <div>
+            {groups.map((group, groupIndex) => {
+              // Use the pre-calculated consensus data for this group
+              const groupConsensusComments = groupConsensusData[groupIndex] || [];
+
+              // Render group consensus table
+              return (
+                <div key={groupIndex} className="group-consensus-section">
+                  <h3
+                    className={`group-heading ${selectedGroup === groupIndex ? 'selected-group' : ''}`}
+                    onClick={() => setSelectedGroup(groupIndex)}
+                  >
+                    Group {groupIndex + 1} ({group.points.length} participants)
+                  </h3>
+
+                  {groupConsensusComments.length === 0 ? (
+                    <div>No comments with 60%+ consensus in this group</div>
+                  ) : (
+                    <div className="consensus-chart" style={{ maxWidth: '800px', maxHeight: "200px", overflow: "scroll" }}>
+                      <div className="consensus-bars">
+                        {groupConsensusComments.map((comment) => (
+                          <div key={comment.commentId} className="consensus-bar-container">
+                            <div className="consensus-label">
+                              <Tippy
+                                content={comment.commentText}
+                                placement="left"
+                                arrow={true}
+                                animation="fade"
+                                duration={100}
+                                delay={[0, 0]}
+                                zIndex={99999}
+                              >
+                                <div
+                                  className="comment-text-preview"
+                                  onClick={() => highlightComment(comment.commentId)}
+                                >
+                                  <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
+                                  {comment.commentText}
+                                </div>
+                              </Tippy>
+                            </div>
+                            <div className="consensus-bar-wrapper">
+                              <div
+                                className={`consensus-bar ${comment.consensusType}`}
+                                style={{
+                                  width: `${comment.consensusPercent * 100}%`,
+                                }}
+                              >
+                                {Math.round(comment.consensusPercent * 100)}%
+                              </div>
+                            </div>
+                            <div className="consensus-stats">
+                              <span className="vote-count">{comment.totalVotes} votes</span>
+                              <span className="consensus-type">
+                                {comment.consensusType === 'agree' ?
+                                  `${comment.agrees} agree` :
+                                  `${comment.disagrees} disagree`}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       <div className="group-aware-consensus">
         <h2>Group-Aware Consensus</h2>

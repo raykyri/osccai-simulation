@@ -395,3 +395,44 @@
   padding-left: 10px;
   font-size: 0.9em;
 }
+
+/* Group consensus styles */
+.group-consensus-section {
+  margin-bottom: 30px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #fafafa;
+}
+
+.group-heading {
+  font-size: 1.1em;
+  margin-bottom: 10px;
+  padding: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.group-heading:hover {
+  background-color: #f0f0f0;
+}
+
+.group-heading.selected-group {
+  background-color: #e0f7fa;
+  color: #006064;
+  font-weight: bold;
+}
+
+/* Make the group consensus charts a bit smaller than the overall one */
+.group-consensus-section .consensus-bar-container {
+  margin-bottom: 10px;
+}
+
+.group-consensus-section .consensus-label {
+  width: 280px;
+}
+
+.group-consensus-section .consensus-stats {
+  width: 120px;
+}
