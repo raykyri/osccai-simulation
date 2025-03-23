@@ -404,10 +404,6 @@
 
 .group-consensus-section {
   margin-bottom: 30px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 12px;
-  background-color: #fafafa;
 }
 
 .group-heading {
@@ -480,4 +476,87 @@
 .footer {
   margin: 0 auto;
   padding: 30px 0;
+}
+
+/* Add these extracted styles to App.css */
+.consensus-bar-multi {
+  display: flex;
+  height: 20px;
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.agree-bar {
+  background-color: #4CAF50; /* Green */
+  height: 100%;
+}
+
+.disagree-bar {
+  background-color: #F44336; /* Red */
+  height: 100%;
+}
+
+.pass-bar {
+  background-color: #FFEB3B; /* Yellow */
+  height: 100%;
+}
+
+.no-vote-bar {
+  background-color: #E0E0E0; /* Light gray */
+  height: 100%;
+}
+
+.vote-breakdown {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-top: 2px;
+  gap: 10px;
+}
+
+.agree-count {
+  color: #4CAF50;
+}
+
+.disagree-count {
+  color: #F44336;
+}
+
+.pass-count {
+  color: #9E9E9E;
+}
+
+.comments-table-container {
+  margin-bottom: 20px;
+  max-height: 200px;
+  overflow: scroll;
+  max-width: 800px;
+  border: 1px solid #ccc;
+  margin: 20px auto;
+}
+
+.data-source-indicator {
+  margin-bottom: 12px;
+  font-style: italic;
+  color: #666;
+}
+
+.top-overall {
+  margin: 0 auto;
+}
+
+.top-by-groups {
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+.group-consensus-section {
+  margin-bottom: 20px;
+}
+
+.group-consensus-section > div {
+  max-width: 800px;
+  max-height: 350px;
+  overflow: auto;
 }
