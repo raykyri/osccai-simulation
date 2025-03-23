@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { SimulationProvider, useSimulation } from './context/SimulationContext.jsx';
 import VoteMatrix from './components/VoteMatrix.jsx';
 import PCAProjection from './components/PCAProjection.jsx';
@@ -39,6 +39,51 @@ const SimulationContent = () => {
     bestK,
     calculateSilhouetteCoefficients
   } = useSimulation();
+
+  const [dataUrl, setDataUrl] = useState('https://pol.is/api/v3/reportExport/r3nhe9auvzhr36dwaytsk/participant-votes.csv');
+  const [urlError, setUrlError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateAndFetchData = useCallback(() => {
+    setUrlError('');
+    
+    if (!dataUrl) {
+      setUrlError('Please enter a URL');
+      return;
+    }
+    
+    if (!dataUrl.endsWith('.csv')) {
+      setUrlError('URL must point to a CSV file');
+      return;
+    }
+    
+    try {
+      new URL(dataUrl);
+    } catch (e) {
+      setUrlError('Invalid URL format');
+      return;
+    }
+    
+    setIsLoading(true);
+
+    fetch(dataUrl.startsWith("https://pol.is/") ? dataUrl.replace("https://pol.is/", "http://localhost:3001/proxy/") : dataUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(data => {
+        console.log('Data fetched successfully');
+        console.log("Fetched data:", data.substring(0, 200) + "...");
+        
+        setIsLoading(false);
+      })
+      .catch(error => {
+        setUrlError(`Failed to fetch data: ${error.message}`);
+        setIsLoading(false);
+      });
+  }, [dataUrl]);
 
   const { generateRandomVoteMatrix, handleVoteChange } = useVoteMatrix(
     participants,
@@ -82,6 +127,30 @@ const SimulationContent = () => {
 
   return (
     <div className="App">
+      <h1>Import Data</h1>
+      <p>
+        Enter the raw data export to analyze
+        <div style={{ fontSize: "80%", color: "#666", marginTop: 2 }}>
+          e.g. https://pol.is/api/v3/reportExport/.../participant-votes.csv
+        </div>
+      </p>
+
+      <input 
+        style={{ width: "400px" }} 
+        type="text" 
+        placeholder="Data Export URL (participant-votes.csv)"
+        onChange={(e) => setDataUrl(e.target.value)}
+        value={dataUrl}
+      />
+      {urlError && <div className="error-message">{urlError}</div>}
+      <br/>
+      <button 
+        onClick={validateAndFetchData} 
+        disabled={!dataUrl}
+      >
+        Fetch Data
+      </button>
+
       <h1>Vote Matrix and PCA Simulation</h1>
       <SimulationControls />
       <button onClick={resetState}>Reset</button>
