@@ -63,12 +63,12 @@
 .participants-label {
   transform: rotate(-90deg);
   transform-origin: left top;
-  left: -30px;
+  left: 20px;
   top: 50%;
 }
 
 .comments-label {
-  top: -30px;
+  top: 50px;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -343,7 +343,6 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
-  cursor: pointer;
   color: #333;
   text-align: left;
   white-space: normal; /* Allow text to wrap */
@@ -366,7 +365,7 @@
   justify-content: flex-end;
   padding-right: 8px;
   color: white;
-  font-weight: bold;
+  font-size: 80%;
   transition: width 0.3s ease;
 }
 
@@ -392,12 +391,15 @@
 }
 
 .consensus-type {
-  width: 100px;
-  padding-left: 10px;
   font-size: 0.9em;
 }
 
 /* Group consensus styles */
+.group-aware-consensus {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
 .group-consensus-section {
   margin-bottom: 30px;
   border: 1px solid #e0e0e0;
@@ -410,19 +412,6 @@
   font-size: 1.1em;
   margin-bottom: 10px;
   padding: 5px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.group-heading:hover {
-  background-color: #f0f0f0;
-}
-
-.group-heading.selected-group {
-  background-color: #e0f7fa;
-  color: #006064;
-  font-weight: bold;
 }
 
 /* Make the group consensus charts a bit smaller than the overall one */
@@ -435,7 +424,8 @@
 }
 
 .group-consensus-section .consensus-stats {
-  width: 120px;
+  width: 90px;
+  text-align: left;
 }
 
 /* Tabs Container */
@@ -483,4 +473,9 @@
 
 .import-tab, .random-tab {
   text-align: center;
+}
+
+.footer {
+  margin: 0 auto;
+  padding: 30px 0;
 }

@@ -9,10 +9,11 @@ import usePCA from './hooks/usePCA.js';
 import useGroupIdentification from './hooks/useGroupIdentification.js';
 import { debug } from './utils/debug.js';
 import Papa from 'papaparse';
-import Tippy from '@tippyjs/react';
 import './App.css';
 
-const parseCSV = (csvString) => {
+const DEFAULT_POLIS_REPORT = 'https://pol.is/api/v3/reportExport/r3nhe9auvzhr36dwaytsk/participant-votes.csv'
+
+const parseVoteMatrixCSV = (csvString) => {
   // Use Papa Parse to parse the CSV properly
   const parseResult = Papa.parse(csvString, {
     header: true,
@@ -116,7 +117,7 @@ const SimulationContent = () => {
     calculateSilhouetteCoefficients
   } = useSimulation();
 
-  const [dataUrl, setDataUrl] = useState('https://pol.is/api/v3/reportExport/r3nhe9auvzhr36dwaytsk/participant-votes.csv');
+  const [dataUrl, setDataUrl] = useState(DEFAULT_POLIS_REPORT);
   const [urlError, setUrlError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [usingImportedData, setUsingImportedData] = useState(false);
@@ -127,8 +128,7 @@ const SimulationContent = () => {
   // Add a state to track initialization
   const [initialized, setInitialized] = useState(false);
 
-  // Add a state to track active tab
-  const [activeTab, setActiveTab] = useState('import'); // 'import' or 'random'
+  const [activeTab, setActiveTab] = useState('import'); // <'import' | 'random'>
 
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
@@ -183,7 +183,7 @@ const SimulationContent = () => {
       console.log('Data fetched successfully');
 
       // Parse CSV to JSON with our custom parsers
-      const { metadata, data: voteData } = parseCSV(votesData);
+      const { metadata, data: voteData } = parseVoteMatrixCSV(votesData);
       const commentData = parseCommentsCSV(commentsData);
 
       console.log("Participant metadata:", metadata);
@@ -391,6 +391,51 @@ const SimulationContent = () => {
   const handleReset = () => {
     setUsingImportedData(false);
     resetState();
+    generateNewVoteMatrix()
+  };
+
+  // Let's extract the ConsensusBarChart component to reuse for both overall and group consensus
+  const ConsensusBarChart = ({ comments, commentTexts }) => {
+    if (!comments || comments.length === 0) {
+      return <div>No comments with 60% or higher consensus</div>;
+    }
+
+    return (
+      <div className="consensus-chart">
+        <div className="consensus-bars">
+          {comments.map((comment) => (
+            <div key={comment.commentId} className="consensus-bar-container">
+              <div className="consensus-label">
+                <div
+                  className="comment-text-preview"
+                >
+                  <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
+                  {comment.commentText}
+                </div>
+              </div>
+              <div className="consensus-bar-wrapper">
+                <div
+                  className={`consensus-bar ${comment.consensusType}`}
+                  style={{
+                    width: `${comment.consensusPercent * 100}%`,
+                  }}
+                >
+                  {Math.round(comment.consensusPercent * 100)}%
+                </div>
+              </div>
+              <div className="consensus-stats">
+                <span className="vote-count">{comment.totalVotes} votes</span>
+                <span className="consensus-type">
+                  {comment.consensusType === 'agree' ?
+                    `${comment.agrees} agree` :
+                    `${comment.disagrees} disagree`}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -410,7 +455,7 @@ const SimulationContent = () => {
             className={`tab ${activeTab === 'random' ? 'active' : ''}`}
             onClick={() => setActiveTab('random')}
           >
-            Generate Random Votes
+            Simulate Randomized Voters
           </button>
         </div>
         
@@ -418,7 +463,6 @@ const SimulationContent = () => {
         <div className="tab-content">
           {activeTab === 'import' && (
             <div className="import-tab">
-              <h2>Import Data</h2>
               <p>
                 Enter the raw data export to analyze
                 <div style={{ fontSize: "80%", color: "#666", marginTop: 2 }}>
@@ -446,15 +490,16 @@ const SimulationContent = () => {
           
           {activeTab === 'random' && (
             <div className="random-tab">
-              <h2>Simulate Voters</h2>
               <SimulationControls />
-              <button onClick={generateNewVoteMatrix}>Generate New Random Votes</button>
+              <button onClick={() => {
+                handleReset()
+              }}>Generate New Random Votes</button>
             </div>
           )}
         </div>
       </div>
       
-      <button onClick={handleReset}>Reset</button>
+      {/* <button onClick={handleReset}>Reset</button> */}
       <div className="data-source-indicator" style={{ marginBottom: '12px', fontStyle: 'italic', color: '#666' }}>
         {usingImportedData
           ? `Currently showing imported data from CSV file (${voteMatrix ? voteMatrix.length : 0} participants, ${commentTexts ? commentTexts.length : 0} comments)`
@@ -519,6 +564,13 @@ const SimulationContent = () => {
 
       <div className="top-overall" style={{ margin: '0 auto' }}>
         <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
+        <ConsensusBarChart 
+          comments={topConsensusComments}
+          commentTexts={commentTexts}
+        />
+      </div>
+
+      <div className="top-by-groups" style={{ maxWidth: '800px', margin: '20px auto' }}>
         {topConsensusComments.length === 0 ? (
           <div>No comments with 60% or higher consensus</div>
         ) : (
@@ -527,23 +579,13 @@ const SimulationContent = () => {
               {topConsensusComments.map((comment) => (
                 <div key={comment.commentId} className="consensus-bar-container">
                   <div className="consensus-label">
-                    <Tippy
-                      content={comment.commentText}
-                      placement="left"
-                      arrow={true}
-                      animation="fade"
-                      duration={100}
-                      delay={[0, 0]}
-                      zIndex={99999}
+                    <div
+                      className="comment-text-preview"
+                      onClick={() => highlightComment(comment.commentId)}
                     >
-                      <div
-                        className="comment-text-preview"
-                        onClick={() => highlightComment(comment.commentId)}
-                      >
-                        <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
-                        {comment.commentText}
-                      </div>
-                    </Tippy>
+                      <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
+                      {comment.commentText}
+                    </div>
                   </div>
                   <div className="consensus-bar-wrapper">
                     <div
@@ -585,8 +627,7 @@ const SimulationContent = () => {
               return (
                 <div key={groupIndex} className="group-consensus-section">
                   <h3
-                    className={`group-heading ${selectedGroup === groupIndex ? 'selected-group' : ''}`}
-                    onClick={() => setSelectedGroup(groupIndex)}
+                    className="group-heading"
                   >
                     Group {groupIndex + 1} ({group.points.length} participants)
                   </h3>
@@ -599,23 +640,12 @@ const SimulationContent = () => {
                         {groupConsensusComments.map((comment) => (
                           <div key={comment.commentId} className="consensus-bar-container">
                             <div className="consensus-label">
-                              <Tippy
-                                content={comment.commentText}
-                                placement="left"
-                                arrow={true}
-                                animation="fade"
-                                duration={100}
-                                delay={[0, 0]}
-                                zIndex={99999}
+                              <div
+                                className="comment-text-preview"
                               >
-                                <div
-                                  className="comment-text-preview"
-                                  onClick={() => highlightComment(comment.commentId)}
-                                >
-                                  <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
-                                  {comment.commentText}
-                                </div>
-                              </Tippy>
+                                <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
+                                {comment.commentText}
+                              </div>
                             </div>
                             <div className="consensus-bar-wrapper">
                               <div
@@ -701,6 +731,9 @@ const SimulationContent = () => {
               ))}
           </tbody>
         </table>
+      </div>
+      <div class="footer">
+        Based on <a href="https://github.com/collect-intel/osccai-simulation" target="_blank" noreferrer noopener>OSCCAI simulation code</a> by <a href="https://cip.org" target="_blank" noreferrer noopener>CIP</a>.
       </div>
     </div>
   );

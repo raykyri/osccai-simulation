@@ -44,7 +44,7 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
   
       return (
         <div className="vote-matrix-outer-container">
-          <h2>Vote Matrix</h2>
+          <h2 style={{ marginBottom: '70px' }}>Vote Matrix</h2>
           <div className="axis-label participants-label">Participants</div>
           <div className="axis-label comments-label">Comments</div>
           <div className="vote-matrix-container" onScroll={handleScroll}>
