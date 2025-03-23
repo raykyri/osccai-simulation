@@ -316,6 +316,7 @@ const SimulationContent = () => {
         selectedGroup={selectedGroup}
         groups={groups}
         highlightedComment={highlightedComment}
+        commentTexts={commentTexts}
       />
       <div className="side-by-side-container">
         <PCAProjection pcaProjection={pcaProjection} groups={groups} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} />

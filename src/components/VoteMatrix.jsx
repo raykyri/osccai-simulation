@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import ActualVoteBar from './ActualVoteBar';
 import { debug } from '../utils/debug';
 
-const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highlightedComment }) => {
+const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highlightedComment, commentTexts }) => {
     const [copyButtonText, setCopyButtonText] = useState('Copy Vote Matrix Data');
 
     const copyVoteMatrixData = useCallback(() => {
@@ -25,7 +25,7 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
         });
     }, [voteMatrix]);
 
-    debug("VoteMatrix props:", { voteMatrix, selectedGroup, groups, highlightedComment });
+    debug("VoteMatrix props:", { voteMatrix, selectedGroup, groups, highlightedComment, commentTexts });
     const renderVoteMatrix = useMemo(() => {
       if (!voteMatrix || voteMatrix.length === 0 || !voteMatrix[0]) {
         debug("No vote matrix data available");
@@ -42,7 +42,7 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
   
       return (
         <div className="vote-matrix-outer-container">
-          <h2>Vote Matrix</h2> {/* Add title */}
+          <h2>Vote Matrix</h2>
           <div className="axis-label participants-label">Participants</div>
           <div className="axis-label comments-label">Comments</div>
           <div className="vote-matrix-container" onScroll={handleScroll}>
@@ -53,6 +53,9 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
                     <div
                       key={j}
                       className={`column-label ${highlightedComment === j ? 'highlighted' : ''}`}
+                      title={commentTexts && commentTexts[j] ? 
+                        `ID: ${commentTexts[j].id}\n${commentTexts[j].text}` : 
+                        `Comment ${j + 1}`}
                     >
                       {j + 1}
                     </div>
@@ -77,11 +80,11 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
               </div>
             </div>
           </div>
-          <h3>Actual Vote Breakdown</h3> {/* Add label */}
+          <h3>Actual Vote Breakdown</h3>
           <ActualVoteBar voteMatrix={voteMatrix} />
         </div>
       );
-    }, [voteMatrix, handleVoteChange, selectedGroup, groups, highlightedComment]);
+    }, [voteMatrix, handleVoteChange, selectedGroup, groups, highlightedComment, commentTexts]);
   
     return (
       <div>
