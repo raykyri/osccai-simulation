@@ -130,6 +130,8 @@ const SimulationContent = () => {
 
   const [activeTab, setActiveTab] = useState('import'); // <'import' | 'random'>
 
+  const [votesLogData, setVotesLogData] = useState(null);
+
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
 
@@ -152,8 +154,9 @@ const SimulationContent = () => {
 
     setIsLoading(true);
 
-    // Calculate the comments.csv URL based on the participant-votes.csv URL
+    // Calculate other URLs
     const commentsUrl = dataUrl.replace('participant-votes.csv', 'comments.csv');
+    const votesLogUrl = dataUrl.replace('participant-votes.csv', 'votes.csv');
 
     // Helper function to handle proxy URL transformation
     const getProxiedUrl = (url) => {
@@ -162,7 +165,7 @@ const SimulationContent = () => {
         url;
     };
 
-    // Fetch both files in parallel
+    // Fetch all three files in parallel
     Promise.all([
       fetch(getProxiedUrl(dataUrl))
         .then(response => {
@@ -177,22 +180,31 @@ const SimulationContent = () => {
             throw new Error(`HTTP error fetching comments! Status: ${response.status}`);
           }
           return response.text();
+        }),
+      fetch(getProxiedUrl(votesLogUrl))
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error fetching votes log! Status: ${response.status}`);
+          }
+          return response.text();
         })
     ])
-    .then(([votesData, commentsData]) => {
+    .then(([votesData, commentsData, votesLogData]) => {
       console.log('Data fetched successfully');
 
       // Parse CSV to JSON with our custom parsers
       const { metadata, data: voteData } = parseVoteMatrixCSV(votesData);
       const commentData = parseCommentsCSV(commentsData);
 
-      console.log("Participant metadata:", metadata);
-      console.log("Vote data:", voteData);
-      console.log("Comment data:", commentData);
+      // console.log("Participant metadata:", metadata);
+      // console.log("Vote data:", voteData);
+      // console.log("Comment data:", commentData);
+      console.log("Votes log data:", votesLogData);
 
       // Set the vote matrix and comment texts with the imported data
       setVoteMatrix(voteData);
       setCommentTexts(commentData);
+      setVotesLogData(votesLogData);
 
       // Mark that we're using imported data
       setUsingImportedData(true);
