@@ -4,11 +4,14 @@ const ActualVoteBar = ({ voteMatrix }) => {
   const totalVotes = voteMatrix.flat().length;
   const agreeVotes = voteMatrix.flat().filter(vote => vote === 1).length;
   const disagreeVotes = voteMatrix.flat().filter(vote => vote === -1).length;
-  const passVotes = totalVotes - agreeVotes - disagreeVotes;
+  const passVotes = voteMatrix.flat().filter(vote => vote === 0).length;
+  const nonVotes = voteMatrix.flat().filter(vote => vote === null).length;
 
-  const agreePercentage = (agreeVotes / totalVotes) * 100;
-  const disagreePercentage = (disagreeVotes / totalVotes) * 100;
-  const passPercentage = (passVotes / totalVotes) * 100;
+  const validVotes = totalVotes - nonVotes;
+  
+  const agreePercentage = validVotes > 0 ? (agreeVotes / validVotes) * 100 : 0;
+  const disagreePercentage = validVotes > 0 ? (disagreeVotes / validVotes) * 100 : 0;
+  const passPercentage = validVotes > 0 ? (passVotes / validVotes) * 100 : 0;
 
   return (
     <div className="actual-vote-bar">

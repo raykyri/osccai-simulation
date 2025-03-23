@@ -497,44 +497,132 @@ const SimulationContent = () => {
   };
 
   // Let's extract the ConsensusBarChart component to reuse for both overall and group consensus
-  const ConsensusBarChart = ({ comments, commentTexts }) => {
+  const ConsensusBarChart = ({ comments, commentTexts, voteMatrix }) => {
     if (!comments || comments.length === 0) {
       return <div>No comments with 60% or higher consensus</div>;
     }
 
+    // Total number of participants who could have voted
+    const totalParticipants = voteMatrix ? voteMatrix.length : 0;
+
     return (
       <div className="consensus-chart">
+        <style>{`
+          .consensus-bar-multi {
+            display: flex;
+            height: 20px;
+            width: 100%;
+            border-radius: 4px;
+            overflow: hidden;
+          }
+          .agree-bar {
+            background-color: #4CAF50; /* Green */
+            height: 100%;
+          }
+          .disagree-bar {
+            background-color: #F44336; /* Red */
+            height: 100%;
+          }
+          .pass-bar {
+            background-color: #FFEB3B; /* Yellow */
+            height: 100%;
+          }
+          .no-vote-bar {
+            background-color: #E0E0E0; /* Light gray */
+            height: 100%;
+          }
+          .vote-breakdown {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-top: 2px;
+            gap: 10px;
+          }
+          .agree-count {
+            color: #4CAF50;
+          }
+          .disagree-count {
+            color: #F44336;
+          }
+          .pass-count {
+            color: #9E9E9E;
+          }
+        `}</style>
         <div className="consensus-bars">
-          {comments.map((comment) => (
-            <div key={comment.commentId} className="consensus-bar-container">
-              <div className="consensus-label">
-                <div
-                  className="comment-text-preview"
-                >
-                  <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
-                  {comment.commentText}
+          {comments.map((comment) => {
+            // Count the total for each vote type for this comment
+            const agrees = comment.agrees;
+            const disagrees = comment.disagrees;
+            
+            // Calculate passes (explicit 0) and no votes (null)
+            let passes = 0;
+            let noVotes = 0;
+            
+            if (voteMatrix && voteMatrix.length > 0) {
+              voteMatrix.forEach(participantVotes => {
+                const vote = participantVotes[comment.commentId];
+                if (vote === 0) passes++;
+                if (vote === null) noVotes++;
+              });
+            }
+            
+            // Calculate percentages of total participants
+            const agreePercent = (agrees / totalParticipants) * 100;
+            const disagreePercent = (disagrees / totalParticipants) * 100;
+            const passPercent = (passes / totalParticipants) * 100;
+            const noVotePercent = (noVotes / totalParticipants) * 100;
+            
+            return (
+              <div key={comment.commentId} className="consensus-bar-container">
+                <div className="consensus-label">
+                  <div className="comment-text-preview">
+                    <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
+                    {comment.commentText}
+                  </div>
+                </div>
+                <div className="consensus-bar-wrapper">
+                  <div className="consensus-bar-multi">
+                    <div
+                      className="agree-bar"
+                      style={{
+                        width: `${agreePercent}%`,
+                      }}
+                      title={`${Math.round(agreePercent)}% agree (${agrees} votes)`}
+                    />
+                    <div
+                      className="disagree-bar"
+                      style={{
+                        width: `${disagreePercent}%`,
+                      }}
+                      title={`${Math.round(disagreePercent)}% disagree (${disagrees} votes)`}
+                    />
+                    <div
+                      className="pass-bar"
+                      style={{
+                        width: `${passPercent}%`,
+                      }}
+                      title={`${Math.round(passPercent)}% pass (${passes} votes)`}
+                    />
+                    <div
+                      className="no-vote-bar"
+                      style={{
+                        width: `${noVotePercent}%`,
+                      }}
+                      title={`${Math.round(noVotePercent)}% no vote (${noVotes} participants)`}
+                    />
+                  </div>
+                </div>
+                <div className="consensus-stats">
+                  <span className="vote-count">{agrees + disagrees + passes} votes on {totalParticipants} participants</span>
+                  <div className="vote-breakdown">
+                    <span className="agree-count">{agrees} agree ({Math.round(agreePercent)}%)</span>
+                    <span className="disagree-count">{disagrees} disagree ({Math.round(disagreePercent)}%)</span>
+                    <span className="pass-count">{passes} pass ({Math.round(passPercent)}%)</span>
+                  </div>
                 </div>
               </div>
-              <div className="consensus-bar-wrapper">
-                <div
-                  className={`consensus-bar ${comment.consensusType}`}
-                  style={{
-                    width: `${comment.consensusPercent * 100}%`,
-                  }}
-                >
-                  {Math.round(comment.consensusPercent * 100)}%
-                </div>
-              </div>
-              <div className="consensus-stats">
-                <span className="vote-count">{comment.totalVotes} votes</span>
-                <span className="consensus-type">
-                  {comment.consensusType === 'agree' ?
-                    `${comment.agrees} agree` :
-                    `${comment.disagrees} disagree`}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -664,54 +752,14 @@ const SimulationContent = () => {
         />
       </div>
 
+      {/* Top comments overall */}
       <div className="top-overall" style={{ margin: '0 auto' }}>
         <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
-        <ConsensusBarChart
+        <ConsensusBarChart 
           comments={topConsensusComments}
           commentTexts={commentTexts}
+          voteMatrix={voteMatrix}
         />
-      </div>
-
-      <div className="top-by-groups" style={{ maxWidth: '800px', margin: '20px auto' }}>
-        {topConsensusComments.length === 0 ? (
-          <div>No comments with 60% or higher consensus</div>
-        ) : (
-          <div className="consensus-chart" style={{ maxWidth: '800px', maxHeight: "200px", overflow: "scroll" }}>
-            <div className="consensus-bars">
-              {topConsensusComments.map((comment) => (
-                <div key={comment.commentId} className="consensus-bar-container">
-                  <div className="consensus-label">
-                    <div
-                      className="comment-text-preview"
-                      onClick={() => highlightComment(comment.commentId)}
-                    >
-                      <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
-                      {comment.commentText}
-                    </div>
-                  </div>
-                  <div className="consensus-bar-wrapper">
-                    <div
-                      className={`consensus-bar ${comment.consensusType}`}
-                      style={{
-                        width: `${comment.consensusPercent * 100}%`,
-                      }}
-                    >
-                      {Math.round(comment.consensusPercent * 100)}%
-                    </div>
-                  </div>
-                  <div className="consensus-stats">
-                    <span className="vote-count">{comment.totalVotes} votes</span>
-                    <span className="consensus-type">
-                      {comment.consensusType === 'agree' ?
-                        `${comment.agrees} agree` :
-                        `${comment.disagrees} disagree`}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="top-by-groups" style={{ maxWidth: '800px', margin: '20px auto' }}>
@@ -720,56 +768,27 @@ const SimulationContent = () => {
         {groups.length === 0 ? (
           <div>No groups identified yet</div>
         ) : (
-          <div>
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
             {groups.map((group, groupIndex) => {
               // Use the pre-calculated consensus data for this group
               const groupConsensusComments = groupConsensusData[groupIndex] || [];
 
               // Render group consensus table
               return (
-                <div key={groupIndex} className="group-consensus-section">
-                  <h3
-                    className="group-heading"
-                  >
+                <div key={groupIndex} className="group-consensus-section" style={{ marginBottom: '20px' }}>
+                  <h3 className="group-heading">
                     Group {groupIndex + 1} ({group.points.length} participants)
                   </h3>
 
                   {groupConsensusComments.length === 0 ? (
                     <div>No comments with 60%+ consensus in this group</div>
                   ) : (
-                    <div className="consensus-chart" style={{ maxWidth: '800px', maxHeight: "200px", overflow: "scroll" }}>
-                      <div className="consensus-bars">
-                        {groupConsensusComments.map((comment) => (
-                          <div key={comment.commentId} className="consensus-bar-container">
-                            <div className="consensus-label">
-                              <div
-                                className="comment-text-preview"
-                              >
-                                <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
-                                {comment.commentText}
-                              </div>
-                            </div>
-                            <div className="consensus-bar-wrapper">
-                              <div
-                                className={`consensus-bar ${comment.consensusType}`}
-                                style={{
-                                  width: `${comment.consensusPercent * 100}%`,
-                                }}
-                              >
-                                {Math.round(comment.consensusPercent * 100)}%
-                              </div>
-                            </div>
-                            <div className="consensus-stats">
-                              <span className="vote-count">{comment.totalVotes} votes</span>
-                              <span className="consensus-type">
-                                {comment.consensusType === 'agree' ?
-                                  `${comment.agrees} agree` :
-                                  `${comment.disagrees} disagree`}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                    <div style={{ maxWidth: '800px', maxHeight: "350px", overflow: "auto" }}>
+                      <ConsensusBarChart 
+                        comments={groupConsensusComments}
+                        commentTexts={commentTexts}
+                        voteMatrix={voteMatrix}
+                      />
                     </div>
                   )}
                 </div>
@@ -778,6 +797,7 @@ const SimulationContent = () => {
           </div>
         )}
       </div>
+
       <div className="group-aware-consensus">
         <h2>Group-Aware Consensus</h2>
         <div>
