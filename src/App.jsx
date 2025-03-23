@@ -8,37 +8,39 @@ import useVoteMatrix from './hooks/useVoteMatrix.js';
 import usePCA from './hooks/usePCA.js';
 import useGroupIdentification from './hooks/useGroupIdentification.js';
 import { debug } from './utils/debug.js';
-import './App.css';
 import Papa from 'papaparse';
+import './App.css';
 
 const parseCSV = (csvString) => {
-  // Split the CSV into rows and skip the empty ones
-  const rows = csvString.split('\n').filter(row => row.trim() !== '');
+  // Use Papa Parse to parse the CSV properly
+  const parseResult = Papa.parse(csvString, { 
+    header: true,
+    skipEmptyLines: true
+  });
   
-  // The first row contains headers
-  const headers = rows[0].split(',').map(header => header.trim());
-  
+  // Extract headers from the parse results
+  const headers = parseResult.meta.fields;
+   
   // Initialize return objects
   const metadata = [];
   const data = [];
   
-  // Process each row except the header row
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i].split(',').map(cell => cell.trim());
-    
+  // Process each row
+  parseResult.data.forEach(row => {
     // Extract metadata (first 6 columns)
     const participantMetadata = {
-      'participant': row[0],
-      'group-id': row[1],
-      'n-comments': parseInt(row[2]) || 0,
-      'n-votes': parseInt(row[3]) || 0,
-      'n-agree': parseInt(row[4]) || 0,
-      'n-disagree': parseInt(row[5]) || 0
+      'participant': row['participant'] || '',
+      'group-id': row['group-id'] || '',
+      'n-comments': parseInt(row['n-comments']) || 0,
+      'n-votes': parseInt(row['n-votes']) || 0,
+      'n-agree': parseInt(row['n-agree']) || 0,
+      'n-disagree': parseInt(row['n-disagree']) || 0
     };
     metadata.push(participantMetadata);
     
-    // Extract vote data (remaining columns)
-    const voteData = row.slice(6).map(vote => {
+    // Extract vote data (columns after the first 6)
+    const voteData = headers.slice(6).map(header => {
+      const vote = row[header];
       // Convert to appropriate type: 1 for agree, -1 for disagree, 0 for pass/skip
       if (vote === '1') return 1;
       if (vote === '-1') return -1;
@@ -46,9 +48,41 @@ const parseCSV = (csvString) => {
     });
     
     data.push(voteData);
-  }
+  });
   
   return { metadata, data };
+};
+
+const parseCommentsCSV = (csvString) => {
+  // Use Papa Parse to handle CSV parsing with proper escaping
+  const parseResult = Papa.parse(csvString, {
+    header: true,
+    skipEmptyLines: true
+  });
+  
+  // Map the parsed data to our comment structure
+  const comments = parseResult.data.map(row => ({
+    timestamp: row['timestamp'] || '',
+    datetime: row['datetime'] || '',
+    id: row['comment-id'] || '',
+    author_id: row['author-id'] || '',
+    agrees: parseInt(row['agrees']) || 0,
+    disagrees: parseInt(row['disagrees']) || 0,
+    moderated: row['moderated'] || '',
+    text: row['comment-body'] || ''
+  }));
+  
+  // Sort comments by ID 
+  comments.sort((a, b) => {
+    // If IDs are numeric, convert to numbers for comparison
+    const idA = isNaN(Number(a.id)) ? a.id : Number(a.id);
+    const idB = isNaN(Number(b.id)) ? b.id : Number(b.id);
+    
+    // Sort in ascending order
+    return idA > idB ? 1 : idA < idB ? -1 : 0;
+  });
+  
+  return comments;
 };
 
 const SimulationContent = () => {
@@ -84,6 +118,8 @@ const SimulationContent = () => {
   const [dataUrl, setDataUrl] = useState('https://pol.is/api/v3/reportExport/r3nhe9auvzhr36dwaytsk/participant-votes.csv');
   const [urlError, setUrlError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [usingImportedData, setUsingImportedData] = useState(false);
+  const [commentTexts, setCommentTexts] = useState([]);
 
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
@@ -107,33 +143,58 @@ const SimulationContent = () => {
 
     setIsLoading(true);
 
-    fetch(dataUrl.startsWith("https://pol.is/") ? dataUrl.replace("https://pol.is/", "http://localhost:3001/proxy/") : dataUrl)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then(data => {
-        console.log('Data fetched successfully');
+    // Calculate the comments.csv URL based on the participant-votes.csv URL
+    const commentsUrl = dataUrl.replace('participant-votes.csv', 'comments.csv');
+    
+    // Helper function to handle proxy URL transformation
+    const getProxiedUrl = (url) => {
+      return url.startsWith("https://pol.is/") ? 
+        url.replace("https://pol.is/", "http://localhost:3001/proxy/") : 
+        url;
+    };
 
-        // Parse CSV to JSON with our custom parser
-        const { metadata, data: voteData } = parseCSV(data);
-        console.log("Participant metadata:", metadata);
-        console.log("Vote data:", voteData);
+    // Fetch both files in parallel
+    Promise.all([
+      fetch(getProxiedUrl(dataUrl))
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error fetching votes! Status: ${response.status}`);
+          }
+          return response.text();
+        }),
+      fetch(getProxiedUrl(commentsUrl))
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error fetching comments! Status: ${response.status}`);
+          }
+          return response.text();
+        })
+    ])
+    .then(([votesData, commentsData]) => {
+      console.log('Data fetched successfully');
 
-        // You might want to store this in your state or context
-        // For example:
-        // setParticipantMetadata(metadata);
-        // setVoteData(voteData);
+      // Parse CSV to JSON with our custom parsers
+      const { metadata, data: voteData } = parseCSV(votesData);
+      const commentData = parseCommentsCSV(commentsData);
+      
+      console.log("Participant metadata:", metadata);
+      console.log("Vote data:", voteData);
+      console.log("Comment data:", commentData);
 
-        setIsLoading(false);
-      })
-      .catch(error => {
-        setUrlError(`Failed to fetch data: ${error.message}`);
-        setIsLoading(false);
-      });
-  }, [dataUrl]);
+      // Set the vote matrix and comment texts with the imported data
+      setVoteMatrix(voteData);
+      setCommentTexts(commentData);
+      
+      // Mark that we're using imported data
+      setUsingImportedData(true);
+
+      setIsLoading(false);
+    })
+    .catch(error => {
+      setUrlError(`Failed to fetch data: ${error.message}`);
+      setIsLoading(false);
+    });
+  }, [dataUrl, setVoteMatrix]);
 
   const { generateRandomVoteMatrix, handleVoteChange } = useVoteMatrix(
     participants,
@@ -157,8 +218,12 @@ const SimulationContent = () => {
   }, [generateRandomVoteMatrix, setVoteMatrix]);
 
   useEffect(() => {
-    generateNewVoteMatrix();
-  }, [participants, comments, agreePercentage, disagreePercentage, consensusGroups, groupSizes, groupSimilarity, generateNewVoteMatrix]);
+    if (!usingImportedData) {
+      generateNewVoteMatrix();
+    }
+  }, [participants, comments, agreePercentage, disagreePercentage, 
+      consensusGroups, groupSizes, groupSimilarity, 
+      generateNewVoteMatrix, usingImportedData]);
 
   useEffect(() => {
     if (voteMatrix && voteMatrix.length > 0) {
@@ -174,6 +239,11 @@ const SimulationContent = () => {
       setGroups(newGroups);
     }
   }, [pcaProjection, identifyGroups, setGroups]);
+
+  const handleReset = () => {
+    setUsingImportedData(false);
+    resetState();
+  };
 
   return (
     <div className="App">
@@ -201,9 +271,45 @@ const SimulationContent = () => {
         Fetch Data
       </button>
 
+      {/* Comments Table */}
+      {usingImportedData && commentTexts && commentTexts.length > 0 && (
+        <div className="comments-table-container" style={{ marginBottom: '20px', maxHeight: 'calc(100vh - 300px)', overflow: 'scroll', maxWidth: '800px', border: '1px solid #ccc', margin: '20px auto' }}>
+          <table className="comments-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Comment Text</th>
+                <th>Agrees</th>
+                <th>Disagrees</th>
+                <th>Author</th>
+              </tr>
+            </thead>
+            <tbody>
+              {commentTexts.map((comment, index) => (
+                <tr key={index} 
+                    onClick={() => highlightComment(index)}
+                    className={highlightedComment === index ? 'highlighted-comment' : ''}>
+                  <td>{comment.id}</td>
+                  <td>{comment.text}</td>
+                  <td>{comment.agrees}</td>
+                  <td>{comment.disagrees}</td>
+                  <td>{comment.author_id}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <h1>Vote Matrix and PCA Simulation</h1>
       <SimulationControls />
-      <button onClick={resetState}>Reset</button>
+      <button onClick={handleReset}>Reset</button>
+      <div className="data-source-indicator" style={{ marginBottom: '12px', fontStyle: 'italic', color: '#666' }}>
+        {usingImportedData 
+          ? `Currently showing imported data from CSV file (${voteMatrix ? voteMatrix.length : 0} participants)` 
+          : 'Currently showing randomly generated data'}
+      </div>
+
       <VoteMatrix
         voteMatrix={voteMatrix}
         handleVoteChange={handleVoteChange}
