@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import ActualVoteBar from './ActualVoteBar';
 import { debug } from '../utils/debug';
+import Tippy from '@tippyjs/react';
+import 'tippy.js/dist/tippy.css'; // Import the default styling
 
 const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highlightedComment, commentTexts }) => {
     const [copyButtonText, setCopyButtonText] = useState('Copy Vote Matrix Data');
@@ -50,15 +52,22 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
               <div className="column-labels-container">
                 <div className="column-labels">
                   {voteMatrix[0].map((_, j) => (
-                    <div
-                      key={j}
-                      className={`column-label ${highlightedComment === j ? 'highlighted' : ''}`}
-                      title={commentTexts && commentTexts[j] ? 
-                        `ID: ${commentTexts[j].id}\n${commentTexts[j].text}` : 
-                        `Comment ${j + 1}`}
-                    >
-                      {j + 1}
-                    </div>
+                    
+                      <div
+                        className={`column-label ${highlightedComment === j ? 'highlighted' : ''}`}
+                      >
+                        <Tippy 
+                          key={j}
+                          content={commentTexts?.[j] ? commentTexts[j].text : `Comment ${j + 1}`}
+                          placement="top"
+                          arrow={true}
+                          animation="fade"
+                          duration={200}
+                          delay={[300, 0]} // Show after 300ms, hide immediately
+                          interactive={true} // Makes the tooltip interactive if needed
+                          zIndex={99999}
+                        ><div>{j + 1}</div></Tippy>
+                      </div>
                   ))}
                 </div>
               </div>

@@ -9,6 +9,7 @@ import usePCA from './hooks/usePCA.js';
 import useGroupIdentification from './hooks/useGroupIdentification.js';
 import { debug } from './utils/debug.js';
 import Papa from 'papaparse';
+import Tippy from '@tippyjs/react';
 import './App.css';
 
 const parseCSV = (csvString) => {
