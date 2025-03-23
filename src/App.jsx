@@ -127,6 +127,9 @@ const SimulationContent = () => {
   // Add a state to track initialization
   const [initialized, setInitialized] = useState(false);
 
+  // Add a state to track active tab
+  const [activeTab, setActiveTab] = useState('import'); // 'import' or 'random'
+
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
 
@@ -244,6 +247,14 @@ const SimulationContent = () => {
       calculateSilhouetteCoefficients(newPcaProjection);
     }
   }, [voteMatrix, performPCA, setPcaProjection, calculateSilhouetteCoefficients]);
+
+  // Add a new effect to automatically set k to the best value when best k is determined
+  useEffect(() => {
+    if (bestK !== null && bestK > 0) {
+      console.log(`Setting k-means k to best value: ${bestK}`);
+      updateKMeansK(bestK);
+    }
+  }, [bestK, updateKMeansK]);
 
   useEffect(() => {
     if (pcaProjection && pcaProjection.length > 0) {
@@ -385,31 +396,72 @@ const SimulationContent = () => {
   return (
     <div className="App">
       <h1>Polis Simulation</h1>
-      <h2>Import Data</h2>
-      <p>
-        Enter the raw data export to analyze
-        <div style={{ fontSize: "80%", color: "#666", marginTop: 2 }}>
-          e.g. https://pol.is/api/v3/reportExport/.../participant-votes.csv
+      
+      {/* Tabs UI */}
+      <div className="tabs-container">
+        <div className="tabs">
+          <button 
+            className={`tab ${activeTab === 'import' ? 'active' : ''}`}
+            onClick={() => setActiveTab('import')}
+          >
+            Import Data
+          </button>
+          <button 
+            className={`tab ${activeTab === 'random' ? 'active' : ''}`}
+            onClick={() => setActiveTab('random')}
+          >
+            Generate Random Votes
+          </button>
         </div>
-      </p>
+        
+        {/* Tab content */}
+        <div className="tab-content">
+          {activeTab === 'import' && (
+            <div className="import-tab">
+              <h2>Import Data</h2>
+              <p>
+                Enter the raw data export to analyze
+                <div style={{ fontSize: "80%", color: "#666", marginTop: 2 }}>
+                  e.g. https://pol.is/api/v3/reportExport/.../participant-votes.csv
+                </div>
+              </p>
 
-      <input
-        style={{ width: "400px" }}
-        type="text"
-        placeholder="Data Export URL (participant-votes.csv)"
-        onChange={(e) => setDataUrl(e.target.value)}
-        value={dataUrl}
-      />
-      {urlError && <div className="error-message">{urlError}</div>}
-      <br/>
-      <button
-        onClick={validateAndFetchData}
-        disabled={!dataUrl}
-      >
-        Fetch Data
-      </button>
+              <input
+                style={{ width: "400px" }}
+                type="text"
+                placeholder="Data Export URL (participant-votes.csv)"
+                onChange={(e) => setDataUrl(e.target.value)}
+                value={dataUrl}
+              />
+              {urlError && <div className="error-message">{urlError}</div>}
+              <br/>
+              <button
+                onClick={validateAndFetchData}
+                disabled={!dataUrl}
+              >
+                Fetch Data
+              </button>
+            </div>
+          )}
+          
+          {activeTab === 'random' && (
+            <div className="random-tab">
+              <h2>Simulate Voters</h2>
+              <SimulationControls />
+              <button onClick={generateNewVoteMatrix}>Generate New Random Votes</button>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <button onClick={handleReset}>Reset</button>
+      <div className="data-source-indicator" style={{ marginBottom: '12px', fontStyle: 'italic', color: '#666' }}>
+        {usingImportedData
+          ? `Currently showing imported data from CSV file (${voteMatrix ? voteMatrix.length : 0} participants, ${commentTexts ? commentTexts.length : 0} comments)`
+          : 'Currently showing randomly generated data'}
+      </div>
 
-      {/* Comments Table */}
+      {/* Comments Table - keep outside tabs */}
       {usingImportedData && commentTexts && commentTexts.length > 0 && (
         <div className="comments-table-container" style={{ marginBottom: '20px', maxHeight: '200px', overflow: 'scroll', maxWidth: '800px', border: '1px solid #ccc', margin: '20px auto' }}>
           <table className="comments-table">
@@ -438,14 +490,6 @@ const SimulationContent = () => {
           </table>
         </div>
       )}
-
-      <SimulationControls />
-      <button onClick={handleReset}>Reset</button>
-      <div className="data-source-indicator" style={{ marginBottom: '12px', fontStyle: 'italic', color: '#666' }}>
-        {usingImportedData
-          ? `Currently showing imported data from CSV file (${voteMatrix ? voteMatrix.length : 0} participants)`
-          : 'Currently showing randomly generated data'}
-      </div>
 
       <VoteMatrix
         voteMatrix={voteMatrix}

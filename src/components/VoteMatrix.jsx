@@ -38,7 +38,7 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
         const labels = document.querySelector('.column-labels');
         const container = e.target;
         if (labels) {
-          labels.style.transform = `translateX(-${container.scrollLeft}px)`;
+          // labels.style.transform = `translateX(-${container.scrollLeft}px)`;
         }
       };
   
