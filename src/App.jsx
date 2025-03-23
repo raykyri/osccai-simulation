@@ -335,7 +335,7 @@ const SimulationContent = () => {
 
       {/* Comments Table */}
       {usingImportedData && commentTexts && commentTexts.length > 0 && (
-        <div className="comments-table-container" style={{ marginBottom: '20px', maxHeight: 'calc(100vh - 300px)', overflow: 'scroll', maxWidth: '800px', border: '1px solid #ccc', margin: '20px auto' }}>
+        <div className="comments-table-container" style={{ marginBottom: '20px', maxHeight: '300px', overflow: 'scroll', maxWidth: '800px', border: '1px solid #ccc', margin: '20px auto' }}>
           <table className="comments-table">
             <thead>
               <tr>
@@ -362,6 +362,59 @@ const SimulationContent = () => {
           </table>
         </div>
       )}
+
+      <div className="top-overall" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
+        {topConsensusComments.length === 0 ? (
+          <div>No comments with 60% or higher consensus</div>
+        ) : (
+          <div className="consensus-chart">
+            <div className="consensus-bars">
+              {topConsensusComments.map((comment) => (
+                <div key={comment.commentId} className="consensus-bar-container">
+                  <div className="consensus-label">
+                    <Tippy 
+                      content={comment.commentText}
+                      placement="left"
+                      arrow={true}
+                      animation="fade"
+                      duration={100}
+                      delay={[0, 0]}
+                      zIndex={99999}
+                    >
+                      <div 
+                        className="comment-text-preview"
+                        onClick={() => highlightComment(comment.commentId)}
+                      >
+                        <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Empty Comment'}: </span>
+                        {comment.commentText}
+                      </div>
+                    </Tippy>
+                  </div>
+                  <div className="consensus-bar-wrapper">
+                    <div 
+                      className={`consensus-bar ${comment.consensusType}`}
+                      style={{ 
+                        width: `${comment.consensusPercent * 100}%`,
+                      }}
+                    >
+                      {Math.round(comment.consensusPercent * 100)}%
+                    </div>
+                  </div>
+                  <div className="consensus-stats">
+                    <span className="vote-count">{comment.totalVotes} votes</span>
+                    <span className="consensus-type">
+                      {comment.consensusType === 'agree' ? 
+                        `${comment.agrees} agree` : 
+                        `${comment.disagrees} disagree`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <h1>Vote Matrix and PCA Simulation</h1>
       <SimulationControls />
@@ -396,63 +449,6 @@ const SimulationContent = () => {
           silhouetteCoefficients={silhouetteCoefficients}
           bestK={bestK}
         />
-      </div>
-      <div className="top-overall" style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
-        {topConsensusComments.length === 0 ? (
-          <div>No comments with 60% or higher consensus</div>
-        ) : (
-          <div className="consensus-chart">
-            <div className="consensus-bars">
-              {topConsensusComments.map((comment) => (
-                <div key={comment.commentId} className="consensus-bar-container">
-                  <div className="consensus-label">
-                    <Tippy 
-                      content={comment.commentText}
-                      placement="left"
-                      arrow={true}
-                      animation="fade"
-                      duration={100}
-                      delay={[0, 0]}
-                      zIndex={99999}
-                    >
-                      <div 
-                        className="comment-id-text"
-                        onClick={() => highlightComment(comment.commentId)}
-                      >
-                        {commentTexts?.[comment.commentId]?.id || ''}
-                      </div>
-                    </Tippy>
-                    <div 
-                      className="comment-text-preview"
-                      onClick={() => highlightComment(comment.commentId)}
-                    >
-                      {comment.commentText}
-                    </div>
-                  </div>
-                  <div className="consensus-bar-wrapper">
-                    <div 
-                      className={`consensus-bar ${comment.consensusType}`}
-                      style={{ 
-                        width: `${comment.consensusPercent * 100}%`,
-                      }}
-                    >
-                      {Math.round(comment.consensusPercent * 100)}%
-                    </div>
-                  </div>
-                  <div className="consensus-stats">
-                    <span className="vote-count">{comment.totalVotes} votes</span>
-                    <span className="consensus-type">
-                      {comment.consensusType === 'agree' ? 
-                        `${comment.agrees} agree` : 
-                        `${comment.disagrees} disagree`}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       <div className="top-by-groups">
       </div>

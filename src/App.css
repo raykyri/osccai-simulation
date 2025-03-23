@@ -292,23 +292,9 @@
 
 /** consensus **/
 
-.consensus-stats {
-  width: 150px;
-  padding-left: 10px;
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9em;
-}
-
-.vote-count {
-  font-weight: bold;
-}
-
-.comment-label-text {
-  max-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.top-overall {
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .consensus-chart {
@@ -325,26 +311,42 @@
 
 .consensus-bar-container {
   display: flex;
-  align-items: center;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  margin-bottom: 15px;
 }
 
 .consensus-label {
-  width: 120px;
-  text-align: right;
+  width: 300px;
   padding-right: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  flex-direction: column;
 }
 
-.comment-label-text {
-  cursor: pointer;
-  font-weight: 500;
+.comment-id-text {
+  font-weight: bold;
+  color: #444;
+  display: inline; /* Make it inline with the text */
 }
 
-.comment-label-text:hover {
+.comment-id-text:hover {
   text-decoration: underline;
+}
+
+.comment-text-preview {
+  font-size: 0.85em;
+  font-weight: normal;
+  line-height: 1.3;
+  max-height: 3.9em; /* 3 lines */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  color: #333;
+  text-align: left;
+  white-space: normal; /* Allow text to wrap */
+  word-wrap: break-word; /* Break long words if needed */
 }
 
 .consensus-bar-wrapper {
@@ -353,6 +355,7 @@
   background-color: #eee;
   border-radius: 4px;
   overflow: hidden;
+  margin-top: 10px;
 }
 
 .consensus-bar {
@@ -372,6 +375,19 @@
 
 .consensus-bar.disagree {
   background-color: #f44336;
+}
+
+.consensus-stats {
+  width: 150px;
+  padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+.vote-count {
+  font-weight: bold;
 }
 
 .consensus-type {
