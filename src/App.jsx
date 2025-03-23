@@ -123,6 +123,9 @@ const SimulationContent = () => {
   const [commentTexts, setCommentTexts] = useState([]);
   const [topConsensusComments, setTopConsensusComments] = useState([]);
   const [groupConsensusData, setGroupConsensusData] = useState([]);
+  
+  // Add a state to track initialization
+  const [initialized, setInitialized] = useState(false);
 
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
@@ -220,13 +223,19 @@ const SimulationContent = () => {
     debug("New vote matrix generated:", newVoteMatrix);
   }, [generateRandomVoteMatrix, setVoteMatrix]);
 
+  // Modified useEffect to load data on component mount
   useEffect(() => {
-    if (!usingImportedData) {
+    // Check if we've already initialized or if data is loading
+    if (!initialized && !isLoading && !usingImportedData) {
+      console.log('Loading default data on initialization');
+      setInitialized(true);
+      validateAndFetchData();
+    } else if (!usingImportedData && !isLoading) {
       generateNewVoteMatrix();
     }
   }, [participants, comments, agreePercentage, disagreePercentage,
       consensusGroups, groupSizes, groupSimilarity,
-      generateNewVoteMatrix, usingImportedData]);
+      generateNewVoteMatrix, usingImportedData, initialized, isLoading, validateAndFetchData]);
 
   useEffect(() => {
     if (voteMatrix && voteMatrix.length > 0) {
@@ -362,7 +371,7 @@ const SimulationContent = () => {
       // Sort by total vote count (descending)
       return consensusData
         .sort((a, b) => b.totalVotes - a.totalVotes)
-        .slice(0, 5); // Show top 5 for each group to keep it manageable
+        .slice(0, 10);
     });
 
     setGroupConsensusData(newGroupConsensusData);
