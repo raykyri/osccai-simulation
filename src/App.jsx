@@ -156,8 +156,6 @@ const parseVotesLogCSV = (csvString) => {
     participantVotes[participantId][commentId] = parseInt(vote, 10);
   });
 
-  console.log(participantVotes)
-
   return participantVotes;
 };
 
@@ -205,6 +203,10 @@ const SimulationContent = () => {
   const [activeTab, setActiveTab] = useState('import'); // <'import' | 'random'>
 
   const [votesLogData, setVotesLogData] = useState(null);
+
+  const [polisStats, setPolisStats] = useState(null);
+
+  const [commentZScores, setCommentZScores] = useState({});
 
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
@@ -263,7 +265,7 @@ const SimulationContent = () => {
           return response.text();
         })
     ])
-    .then(([votesData, commentsData, votesLogData]) => {
+    .then(async ([votesData, commentsData, votesLogData]) => {
       console.log('Data fetched successfully');
 
       // Parse CSV to JSON with our custom parsers
@@ -290,6 +292,144 @@ const SimulationContent = () => {
           });
         }
       });
+
+      // ========== Add Polis statistical calculations as described in STATS.md ==========
+      console.log('Calculating Polis statistics from STATS.md');
+
+      // Create arrays to store top comments for agreement and disagreement
+      let topAgreeComments = [];
+      let topDisagreeComments = [];
+
+      // Create an object to store z-scores for ALL comments
+      const allCommentZScores = {};
+
+      // Helper function for proportion test as described in STATS.md
+      function proportionTest(successes, trials) {
+        // Add pseudocounts as per the implementation
+        const adjustedSuccesses = successes + 1;
+        const adjustedTrials = trials + 1;
+
+        // Calculate z-score: 2 * sqrt(n) * (successes/n - 0.5)
+        return 2 *
+          Math.sqrt(adjustedTrials) *
+          (adjustedSuccesses / adjustedTrials - 0.5);
+      }
+
+      // Helper function to check if z-score is significant at 90% confidence
+      function isSignificantAt90Percent(zScore) {
+        return zScore > 1.2816; // Critical z-value for 90% confidence (one-tailed)
+      }
+
+      // Process each comment - calculate stats for ALL comments
+      commentData.forEach((comment, commentIndex) => {
+        // Initialize counters
+        let agrees = 0;
+        let disagrees = 0;
+        let passes = 0;
+        let totalSeen = 0;
+
+        // Count votes for this comment
+        updatedVoteMatrix.forEach(participantVotes => {
+          const vote = participantVotes[commentIndex];
+
+          // Only count non-null votes as "seen"
+          if (vote !== null) {
+            totalSeen++;
+
+            if (vote === 1) agrees++;
+            else if (vote === -1) disagrees++;
+            else if (vote === 0) passes++;
+          }
+        });
+
+        // 1. Bayesian Agreement Probability Calculation (from STATS.md)
+        const agreementProb = (agrees + 1) / (totalSeen + 2);
+        const disagreementProb = (disagrees + 1) / (totalSeen + 2);
+
+        // 2. Statistical Significance Calculation (from STATS.md)
+        const agreementZScore = proportionTest(agrees, totalSeen);
+        const disagreementZScore = proportionTest(disagrees, totalSeen);
+
+        // Check if statistically significant at 90% confidence
+        const isAgreeSignificant = isSignificantAt90Percent(agreementZScore);
+        const isDisagreeSignificant = isSignificantAt90Percent(disagreementZScore);
+
+        // Composite metrics (agreement/disagreement probability * z-score)
+        const agreementMetric = agreementProb * agreementZScore;
+        const disagreementMetric = disagreementProb * disagreementZScore;
+
+        // Create comment stat object
+        const commentStat = {
+          id: comment.id,
+          commentIndex,
+          text: comment.text,
+          numAgrees: agrees,
+          numDisagrees: disagrees,
+          numPasses: passes,
+          numSeen: totalSeen,
+          agreementProb,
+          disagreementProb,
+          agreementZScore,
+          disagreementZScore,
+          agreementMetric,
+          disagreementMetric,
+          isAgreeSignificant,
+          isDisagreeSignificant
+        };
+
+        // Store z-scores for ALL comments
+        allCommentZScores[commentIndex] = {
+          agreementZScore,
+          disagreementZScore,
+          isAgreeSignificant,
+          isDisagreeSignificant
+        };
+
+        // Then handle top comments collection as before
+        // Check for agreement significance
+        if (agreementProb > 0.5 && isAgreeSignificant) {
+          // Add to top agree comments if eligible
+          if (topAgreeComments.length < 5) {
+            topAgreeComments.push(commentStat);
+            // Sort by agreement metric (highest first)
+            topAgreeComments.sort((a, b) => b.agreementMetric - a.agreementMetric);
+          } else if (agreementMetric > topAgreeComments[4].agreementMetric) {
+            // Replace lowest entry if this one has higher metric
+            topAgreeComments[4] = commentStat;
+            // Re-sort the array
+            topAgreeComments.sort((a, b) => b.agreementMetric - a.agreementMetric);
+          }
+        }
+
+        // Check for disagreement significance
+        if (disagreementProb > 0.5 && isDisagreeSignificant) {
+          // Add to top disagree comments if eligible
+          if (topDisagreeComments.length < 5) {
+            topDisagreeComments.push(commentStat);
+            // Sort by disagreement metric (highest first)
+            topDisagreeComments.sort((a, b) => b.disagreementMetric - a.disagreementMetric);
+          } else if (disagreementMetric > topDisagreeComments[4].disagreementMetric) {
+            // Replace lowest entry if this one has higher metric
+            topDisagreeComments[4] = commentStat;
+            // Re-sort the array
+            topDisagreeComments.sort((a, b) => b.disagreementMetric - a.disagreementMetric);
+          }
+        }
+      });
+
+      // Store the top comments and ALL z-scores in the state
+      const statsData = {
+        consensusComments: {
+          agree: topAgreeComments,
+          disagree: topDisagreeComments
+        },
+        zScores: allCommentZScores  // Store z-scores for ALL comments
+      };
+      setPolisStats(statsData);
+
+      console.log('stats data!!', statsData)
+
+      // ========== End of Polis statistical calculations ==========
 
       // Set the updated vote matrix with nulls for unvoted items
       setVoteMatrix(updatedVoteMatrix);
@@ -335,12 +475,15 @@ const SimulationContent = () => {
       console.log('Loading default data on initialization');
       setInitialized(true);
       validateAndFetchData();
-    } else if (!usingImportedData && !isLoading) {
+    }
+  }, [initialized, isLoading, usingImportedData, validateAndFetchData]);
+
+  // Separate useEffect for random data generation
+  useEffect(() => {
+    if (initialized && !isLoading && !usingImportedData) {
       generateNewVoteMatrix();
     }
-  }, [participants, comments, agreePercentage, disagreePercentage,
-      consensusGroups, groupSizes, groupSimilarity,
-      generateNewVoteMatrix, usingImportedData, initialized, isLoading, validateAndFetchData]);
+  }, [initialized, isLoading, usingImportedData, generateNewVoteMatrix]);
 
   useEffect(() => {
     if (voteMatrix && voteMatrix.length > 0) {
@@ -524,50 +667,79 @@ const SimulationContent = () => {
     generateNewVoteMatrix()
   };
 
-  const ConsensusBarChart = ({ comments, commentTexts, voteMatrix }) => {
+  const ConsensusBarChart = ({ comments, commentTexts, voteMatrix, sortByZScore = false }) => {
     if (!comments || comments.length === 0) {
-      return <div>No comments with 60% or higher consensus</div>;
+      return <div>No comments with sufficient consensus</div>;
     }
 
     // Total number of participants who could have voted
     const totalParticipants = voteMatrix ? voteMatrix.length : 0;
 
+    // Sort comments based on the requested sort method
+    const sortedComments = [...comments].sort((a, b) => {
+      if (sortByZScore) {
+        // Get maximum absolute z-score for each comment
+        const aMaxZScore = Math.max(
+          Math.abs(a.agreementZScore || 0),
+          Math.abs(a.disagreementZScore || 0)
+        );
+        const bMaxZScore = Math.max(
+          Math.abs(b.agreementZScore || 0),
+          Math.abs(b.disagreementZScore || 0)
+        );
+
+        // Sort by maximum absolute z-score (higher values first)
+        return bMaxZScore - aMaxZScore;
+      } else {
+        // Default sort by participation count
+        return (b.numSeen || b.totalVotes || 0) - (a.numSeen || a.totalVotes || 0);
+      }
+    });
+
     return (
       <div className="consensus-chart">
-        {comments.map((comment) => {
-          // Count the total for each vote type for this comment
-          const agrees = comment.agrees;
-          const disagrees = comment.disagrees;
+        {sortedComments.map((comment) => {
+          // Use the values directly from the comment object
+          const agrees = comment.numAgrees || comment.agrees || 0;
+          const disagrees = comment.numDisagrees || comment.disagrees || 0;
+          const totalSeen = comment.numSeen || comment.totalVotes || 0;
 
-          // Calculate passes (explicit 0) and no votes (null)
-          let passes = 0;
+          // Use the passes value if provided, otherwise calculate it
+          let passes = comment.numPasses || 0;
           let noVotes = 0;
 
-          if (voteMatrix && voteMatrix.length > 0) {
+          // Only calculate passes and noVotes if they're not provided
+          if (voteMatrix && voteMatrix.length > 0 && !comment.numPasses) {
             voteMatrix.forEach(participantVotes => {
-              const vote = participantVotes[comment.commentId];
+              const vote = participantVotes[comment.commentId || comment.commentIndex];
               if (vote === 0) passes++;
               if (vote === null) noVotes++;
             });
           }
 
-          // Calculate total explicit votes (agree + disagree + pass)
-          const totalExplicitVotes = agrees + disagrees + passes;
-
-          // Calculate percentages of explicit votes only
-          const agreePercent = totalExplicitVotes > 0 ? (agrees / totalExplicitVotes) * 100 : 0;
-          const disagreePercent = totalExplicitVotes > 0 ? (disagrees / totalExplicitVotes) * 100 : 0;
-          const passPercent = totalExplicitVotes > 0 ? (passes / totalExplicitVotes) * 100 : 0;
-
-          // Still calculate non-vote percentage for display purposes
+          // Calculate percentages based on TOTAL participants
+          const agreePercent = (agrees / totalParticipants) * 100;
+          const disagreePercent = (disagrees / totalParticipants) * 100;
+          const passPercent = (passes / totalParticipants) * 100;
           const noVotePercent = (noVotes / totalParticipants) * 100;
 
+          // Get comment index from either format
+          const commentIndex = comment.commentId !== undefined ? comment.commentId : comment.commentIndex;
+
+          // Calculate vote percentages for the text label (out of those who voted)
+          const totalVotes = agrees + disagrees + passes;
+          const agreeVotePercent = totalVotes > 0 ? (agrees / totalVotes) * 100 : 0;
+          const disagreeVotePercent = totalVotes > 0 ? (disagrees / totalVotes) * 100 : 0;
+          const passVotePercent = totalVotes > 0 ? (passes / totalVotes) * 100 : 0;
+
           return (
-            <div key={comment.commentId} className="consensus-bar-container">
+            <div key={commentIndex} className="consensus-bar-container">
               <div className="consensus-label">
                 <div className="comment-text-preview">
-                  <span className="comment-id-text">{commentTexts?.[comment.commentId]?.id || 'Generated Comment'}: </span>
-                  {comment.commentText}
+                  <span className="comment-id-text">
+                    {commentTexts?.[commentIndex]?.id || `Comment ${commentIndex + 1}`}:
+                  </span>
+                  {comment.text || comment.commentText}
                 </div>
               </div>
               <div className="consensus-bar-wrapper">
@@ -577,36 +749,36 @@ const SimulationContent = () => {
                     style={{
                       width: `${agreePercent}%`,
                     }}
-                    title={`${Math.round(agreePercent)}% agree (${agrees} votes)`}
+                    title={`${Math.round(agreePercent)}% of all participants agree (${agrees} votes)`}
                   />
                   <div
                     className="disagree-bar"
                     style={{
                       width: `${disagreePercent}%`,
                     }}
-                    title={`${Math.round(disagreePercent)}% disagree (${disagrees} votes)`}
+                    title={`${Math.round(disagreePercent)}% of all participants disagree (${disagrees} votes)`}
                   />
                   <div
                     className="pass-bar"
                     style={{
                       width: `${passPercent}%`,
                     }}
-                    title={`${Math.round(passPercent)}% pass (${passes} votes)`}
+                    title={`${Math.round(passPercent)}% of all participants pass (${passes} votes)`}
                   />
                   <div
                     className="no-vote-bar"
                     style={{
                       width: `${noVotePercent}%`,
                     }}
-                    title={`${Math.round(noVotePercent)}% no vote (${noVotes} participants)`}
+                    title={`${Math.round(noVotePercent)}% of all participants didn't vote (${noVotes} participants)`}
                   />
                 </div>
               </div>
               <div className="consensus-stats">
                 <div className="vote-breakdown">
-                  <span className="agree-count">{agrees} agree ({Math.round(agreePercent)}%)</span>
-                  <span className="disagree-count">{disagrees} disagree ({Math.round(disagreePercent)}%)</span>
-                  <span className="pass-count">{passes} pass ({Math.round(passPercent)}%)</span>
+                  <span className="agree-count">{agrees} agree ({Math.round(agreeVotePercent)}%)</span>
+                  <span className="disagree-count">{disagrees} disagree ({Math.round(disagreeVotePercent)}%)</span>
+                  <span className="pass-count">{passes} pass ({Math.round(passVotePercent)}%)</span>
                 </div>
               </div>
             </div>
@@ -695,24 +867,75 @@ const SimulationContent = () => {
                 <th>Agrees</th>
                 <th>Disagrees</th>
                 <th>Passes</th>
+                {polisStats && (
+                  <>
+                    <th>Agree Z-Score</th>
+                    <th>Disagree Z-Score</th>
+                    <th>Significance</th>
+                  </>
+                )}
                 <th>Author</th>
               </tr>
             </thead>
             <tbody>
-              {commentTexts.map((comment, index) => (
-                <tr key={index}
-                    onClick={() => highlightComment(index)}
-                    className={highlightedComment === index ? 'highlighted-comment' : ''}>
-                  <td>{comment.id}</td>
-                  <td>{comment.text}</td>
-                  <td>{comment.agrees}</td>
-                  <td>{comment.disagrees}</td>
-                  <td>{comment.passes || 0}</td>
-                  <td>{comment.author_id}</td>
-                </tr>
-              ))}
+              {commentTexts.map((comment, index) => {
+                // Get z-scores for this comment from polisStats
+                const zScoreData = polisStats?.zScores?.[index];
+
+                // Determine significance
+                const isSignificant = zScoreData ?
+                  (zScoreData.isAgreeSignificant ? 'Agree*' :
+                   zScoreData.isDisagreeSignificant ? 'Disagree*' : '-')
+                  : '-';
+
+                return (
+                  <tr key={index}
+                      onClick={() => highlightComment(index)}
+                      className={highlightedComment === index ? 'highlighted-comment' : ''}>
+                    <td>{comment.id}</td>
+                    <td>{comment.text}</td>
+                    <td className="vote-cell">
+                      <div className="vote-count">{comment.agrees}</div>
+                      {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
+                        <div className="vote-percent">
+                          {Math.round((comment.agrees / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
+                        </div>
+                      )}
+                    </td>
+                    <td className="vote-cell">
+                      <div className="vote-count">{comment.disagrees}</div>
+                      {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
+                        <div className="vote-percent">
+                          {Math.round((comment.disagrees / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
+                        </div>
+                      )}
+                    </td>
+                    <td className="vote-cell">
+                      <div className="vote-count">{comment.passes || 0}</div>
+                      {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
+                        <div className="vote-percent">
+                          {Math.round(((comment.passes || 0) / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
+                        </div>
+                      )}
+                    </td>
+                    {polisStats && (
+                      <>
+                        <td>{zScoreData ? zScoreData.agreementZScore.toFixed(2) : '-'}</td>
+                        <td>{zScoreData ? zScoreData.disagreementZScore.toFixed(2) : '-'}</td>
+                        <td>{isSignificant}</td>
+                      </>
+                    )}
+                    <td>{comment.author_id}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+          {polisStats && (
+            <div className="table-footer">
+              {"Statistically significant at 90% confidence (z-score > 1.2816)"}
+            </div>
+          )}
         </div>
       )}
 
@@ -742,16 +965,37 @@ const SimulationContent = () => {
         />
       </div>
 
-      {/* Top comments overall */}
+      {/* Top comments overall - Combined and sorted by max absolute z-score */}
       <div className="top-overall">
-        <h2>Overall Consensus Comments</h2>
-        <div className="consensus-chart-container">
-          <ConsensusBarChart
-            comments={topConsensusComments}
-            commentTexts={commentTexts}
-            voteMatrix={voteMatrix}
-          />
-        </div>
+        <h2>Overall Statistical Consensus</h2>
+
+        {polisStats ? (
+          <div className="stats-consensus-section">
+            {(polisStats.consensusComments.agree.length > 0 || polisStats.consensusComments.disagree.length > 0) ? (
+              <div className="consensus-chart-container">
+                <ConsensusBarChart
+                  comments={[
+                    ...polisStats.consensusComments.agree.map(comment => ({...comment, type: 'agree'})),
+                    ...polisStats.consensusComments.disagree.map(comment => ({...comment, type: 'disagree'}))
+                  ]}
+                  commentTexts={commentTexts}
+                  voteMatrix={voteMatrix}
+                  sortByZScore={true}
+                />
+              </div>
+            ) : (
+              <div>No statistically significant comments found</div>
+            )}
+          </div>
+        ) : (
+          <div className="consensus-chart-container">
+            <ConsensusBarChart
+              comments={topConsensusComments}
+              commentTexts={commentTexts}
+              voteMatrix={voteMatrix}
+            />
+          </div>
+        )}
       </div>
 
       <div className="top-by-groups">
@@ -790,62 +1034,6 @@ const SimulationContent = () => {
         )}
       </div>
 
-      <div className="group-aware-consensus">
-        <h2>Group-Aware Consensus</h2>
-        <div>
-          <label>Minimum Consensus Threshold: </label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={consensusThreshold}
-            onChange={(e) => setConsensusThreshold(Number(e.target.value))}
-          />
-          <span>{consensusThreshold.toFixed(2)}</span>
-        </div>
-        <table className="consensus-table">
-          <thead>
-            <tr>
-              <th>Comment</th>
-              <th>Consensus Score</th>
-              {groups.map((_, i) => (
-                <th key={i}>Group {i + 1}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {consensusScores
-              .filter(score => score.consensusScore >= consensusThreshold)
-              .map(({ commentIndex, consensusScore }) => (
-                <tr key={commentIndex}>
-                  <td>
-                    <button onClick={() => highlightComment(commentIndex)}>
-                      Comment {commentIndex + 1}
-                    </button>
-                  </td>
-                  <td>{consensusScore.toFixed(4)}</td>
-                  {groups.map((group, i) => {
-                    const groupVotes = group.points.map(index => voteMatrix[index][commentIndex]);
-                    const agreePercentage = (groupVotes.filter(vote => vote === 1).length / groupVotes.length) * 100;
-                    return (
-                      <td key={i}>
-                        <div className="vote-bar">
-                          <div
-                            className="agree-bar"
-                            style={{ width: `${agreePercentage}%` }}
-                          >
-                            {agreePercentage.toFixed(1)}%
-                          </div>
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
       <div class="footer">
         Based on <a href="https://github.com/collect-intel/osccai-simulation" target="_blank" noreferrer noopener>OSCCAI simulation code</a> by <a href="https://cip.org" target="_blank" noreferrer noopener>CIP</a>.
       </div>
