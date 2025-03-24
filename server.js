@@ -44,8 +44,8 @@ app.use(express.static(path.join(__dirname, 'build'), {
   etag: true,
   lastModified: true,
   setHeaders: (res, path) => {
-    // For JS and CSS files - no cache (must revalidate)
-    if (path.endsWith('.js') || path.endsWith('.css')) {
+    // For JS, CSS, and HTML files - no cache (must revalidate)
+    if (path.endsWith('.js') || path.endsWith('.css') || path.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     } else {
       // For other static assets - cache for 1 hour
@@ -109,6 +109,7 @@ app.use('/proxy', async (req, res) => {
 
 // Handle any remaining requests with index.html (SPA routing)
 app.get('*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 

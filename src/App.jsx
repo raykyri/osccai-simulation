@@ -958,7 +958,7 @@ const SimulationContent = () => {
       <div className="top-by-groups">
         <h2>Group Top Comments</h2>
         <p>
-          Group consensus scoring has not been implemented yet. These are showing top comments only.
+          Group consensus scoring has not been implemented yet. These tables show most voted comments instead.
         </p>
 
         {groups.length === 0 ? (
@@ -995,7 +995,7 @@ const SimulationContent = () => {
       </div>
 
       <div class="footer">
-        MIT &copy; {(new Date()).getFullYear()}. Based on <a href="https://github.com/collect-intel/osccai-simulation" target="_blank" noreferrer noopener>OSCCAI simulation code</a> by <a href="https://cip.org" target="_blank" noreferrer noopener>CIP</a>.
+        MIT &copy; {(new Date()).getFullYear()}. Based on <a href="https://github.com/collect-intel/osccai-simulation" target="_blank" noreferrer noopener>OSCCAI simulation</a> by <a href="https://cip.org" target="_blank" noreferrer noopener>CIP</a>.
       </div>
     </div>
   );
