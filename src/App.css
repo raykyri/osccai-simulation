@@ -297,8 +297,10 @@
   margin: 0 auto;
 }
 
-.consensus-chart {
-  margin: 15px 0;
+.consensus-chart-container {
+  max-width: 800px;
+  max-height: 200px;
+  overflow: auto;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 5px;
@@ -537,12 +539,3 @@
   margin-bottom: 20px;
 }
 
-.group-consensus-section > div {
-  /* These properties are now handled by .consensus-chart-container */
-}
-
-.consensus-chart-container {
-  max-width: 800px;
-  max-height: 350px;
-  overflow: auto;
-}
