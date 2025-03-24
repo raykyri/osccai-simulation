@@ -39,8 +39,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files from the build directory
-app.use(express.static(path.join(__dirname, 'build')));
+// Serve static files from the build directory with cache control
+app.use(express.static(path.join(__dirname, 'build'), {
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    // For JS and CSS files - no cache (must revalidate)
+    if (path.endsWith('.js') || path.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else {
+      // For other static assets - cache for 1 hour
+      res.setHeader('Cache-Control', 'max-age=3600');
+    }
+  }
+}));
 
 // Custom proxy implementation
 app.use('/proxy', async (req, res) => {
