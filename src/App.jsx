@@ -366,6 +366,34 @@ const SimulationContent = () => {
   }, [pcaProjection, identifyGroups, setGroups]);
 
   useEffect(() => {
+    // Skip calculations if no groups or no vote matrix
+    if (!voteMatrix || voteMatrix.length === 0 || !commentTexts || commentTexts.length === 0) {
+      return;
+    }
+
+    // Create an updated copy of commentTexts with pass counts
+    const updatedCommentTexts = commentTexts.map((comment, index) => {
+      // Calculate passes for this comment
+      let passes = 0;
+
+      voteMatrix.forEach(participantVotes => {
+        const vote = participantVotes[index];
+        if (vote === 0) passes++;
+      });
+
+      // Return a new object with the pass count added
+      return {
+        ...comment,
+        passes: passes
+      };
+    });
+
+    // Update comment texts with the calculated pass counts
+    setCommentTexts(updatedCommentTexts);
+
+  }, [voteMatrix, commentTexts.length]); // Only recalculate when vote matrix changes or comment length changes
+
+  useEffect(() => {
     // Only calculate if we have vote data
     if (!voteMatrix || voteMatrix.length === 0 || !voteMatrix[0]) {
       setTopConsensusComments([]);
@@ -496,7 +524,6 @@ const SimulationContent = () => {
     generateNewVoteMatrix()
   };
 
-  // Let's extract the ConsensusBarChart component to reuse for both overall and group consensus
   const ConsensusBarChart = ({ comments, commentTexts, voteMatrix }) => {
     if (!comments || comments.length === 0) {
       return <div>No comments with 60% or higher consensus</div>;
@@ -511,11 +538,11 @@ const SimulationContent = () => {
           // Count the total for each vote type for this comment
           const agrees = comment.agrees;
           const disagrees = comment.disagrees;
-          
+
           // Calculate passes (explicit 0) and no votes (null)
           let passes = 0;
           let noVotes = 0;
-          
+
           if (voteMatrix && voteMatrix.length > 0) {
             voteMatrix.forEach(participantVotes => {
               const vote = participantVotes[comment.commentId];
@@ -523,13 +550,18 @@ const SimulationContent = () => {
               if (vote === null) noVotes++;
             });
           }
-          
-          // Calculate percentages of total participants
-          const agreePercent = (agrees / totalParticipants) * 100;
-          const disagreePercent = (disagrees / totalParticipants) * 100;
-          const passPercent = (passes / totalParticipants) * 100;
+
+          // Calculate total explicit votes (agree + disagree + pass)
+          const totalExplicitVotes = agrees + disagrees + passes;
+
+          // Calculate percentages of explicit votes only
+          const agreePercent = totalExplicitVotes > 0 ? (agrees / totalExplicitVotes) * 100 : 0;
+          const disagreePercent = totalExplicitVotes > 0 ? (disagrees / totalExplicitVotes) * 100 : 0;
+          const passPercent = totalExplicitVotes > 0 ? (passes / totalExplicitVotes) * 100 : 0;
+
+          // Still calculate non-vote percentage for display purposes
           const noVotePercent = (noVotes / totalParticipants) * 100;
-          
+
           return (
             <div key={comment.commentId} className="consensus-bar-container">
               <div className="consensus-label">
@@ -571,7 +603,6 @@ const SimulationContent = () => {
                 </div>
               </div>
               <div className="consensus-stats">
-                <span className="vote-count">{agrees + disagrees + passes} votes on {totalParticipants} participants</span>
                 <div className="vote-breakdown">
                   <span className="agree-count">{agrees} agree ({Math.round(agreePercent)}%)</span>
                   <span className="disagree-count">{disagrees} disagree ({Math.round(disagreePercent)}%)</span>
@@ -663,6 +694,7 @@ const SimulationContent = () => {
                 <th>Comment Text</th>
                 <th>Agrees</th>
                 <th>Disagrees</th>
+                <th>Passes</th>
                 <th>Author</th>
               </tr>
             </thead>
@@ -675,6 +707,7 @@ const SimulationContent = () => {
                   <td>{comment.text}</td>
                   <td>{comment.agrees}</td>
                   <td>{comment.disagrees}</td>
+                  <td>{comment.passes || 0}</td>
                   <td>{comment.author_id}</td>
                 </tr>
               ))}
@@ -711,16 +744,18 @@ const SimulationContent = () => {
 
       {/* Top comments overall */}
       <div className="top-overall">
-        <h2>Top 10 Comments with 60%+ Consensus by Participant Count</h2>
-        <ConsensusBarChart 
-          comments={topConsensusComments}
-          commentTexts={commentTexts}
-          voteMatrix={voteMatrix}
-        />
+        <h2>Overall Consensus Comments</h2>
+        <div className="consensus-chart-container">
+          <ConsensusBarChart
+            comments={topConsensusComments}
+            commentTexts={commentTexts}
+            voteMatrix={voteMatrix}
+          />
+        </div>
       </div>
 
       <div className="top-by-groups">
-        <h2>Comments with 60%+ Consensus by Group</h2>
+        <h2>Group Consensus Comments</h2>
 
         {groups.length === 0 ? (
           <div>No groups identified yet</div>
@@ -740,8 +775,8 @@ const SimulationContent = () => {
                   {groupConsensusComments.length === 0 ? (
                     <div>No comments with 60%+ consensus in this group</div>
                   ) : (
-                    <div>
-                      <ConsensusBarChart 
+                    <div className="consensus-chart-container">
+                      <ConsensusBarChart
                         comments={groupConsensusComments}
                         commentTexts={commentTexts}
                         voteMatrix={voteMatrix}
