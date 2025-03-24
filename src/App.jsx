@@ -237,10 +237,10 @@ const SimulationContent = () => {
     // Helper function to handle proxy URL transformation
     const getProxiedUrl = (url) => {
       // Use relative path for proxy in production, or localhost in development
-      const proxyBase = process.env.NODE_ENV === 'production' 
+      const proxyBase = process.env.NODE_ENV === 'production'
         ? '/proxy/'
         : 'http://localhost:3001/proxy/';
-        
+
       return url.startsWith("https://pol.is/") ?
         url.replace("https://pol.is/", proxyBase) :
         url;
@@ -1004,7 +1004,10 @@ const SimulationContent = () => {
       </div>
 
       <div className="top-by-groups">
-        <h2>Group Consensus Comments</h2>
+        <h2>Group Top Comments</h2>
+        <p>
+          Group consensus scoring has not been implemented yet. These are showing top comments only.
+        </p>
 
         {groups.length === 0 ? (
           <div>No groups identified yet</div>

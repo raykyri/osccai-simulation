@@ -586,3 +586,18 @@
   text-align: left;
 }
 
+/* Add this media query for mobile viewports */
+@media (max-width: 768px) {
+  .side-by-side-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .pca-projection,
+  .group-analysis {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
