@@ -2,9 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import http from 'http';
 import https from 'https';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const TARGET_URL = new URL('https://pol.is');
 
 // Simple in-memory cache
@@ -33,6 +38,9 @@ app.use((req, res, next) => {
   
   next();
 });
+
+// Serve static files from the build directory
+app.use(express.static(path.join(__dirname, 'build')));
 
 // Custom proxy implementation
 app.use('/proxy', async (req, res) => {
@@ -87,7 +95,12 @@ app.use('/proxy', async (req, res) => {
   }
 });
 
+// Handle any remaining requests with index.html (SPA routing)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Proxy server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

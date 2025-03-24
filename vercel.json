@@ -1,19 +1,28 @@
 {
+    "version": 2,
     "builds": [
+      {
+        "src": "server.js",
+        "use": "@vercel/node"
+      },
       {
         "src": "package.json",
         "use": "@vercel/static-build",
         "config": { 
           "distDir": "build",
-          "installCommand": "npm install react-scripts && npm install"
+          "installCommand": "npm install && npm run build"
         }
       }
     ],
     "routes": [
-      { "src": "/static/(.*)", "dest": "/static/$1" },
-      { "src": "/favicon.ico", "dest": "/favicon.ico" },
-      { "src": "/manifest.json", "dest": "/manifest.json" },
-      { "src": "/logo192.png", "dest": "/logo192.png" },
-      { "src": "/(.*)", "dest": "/index.html" }
+      { "src": "/proxy/(.*)", "dest": "/server.js" },
+      { "src": "/assets/(.*)", "dest": "/build/assets/$1" },
+      { "src": "/static/(.*)", "dest": "/build/static/$1" },
+      { "src": "/favicon.ico", "dest": "/build/favicon.ico" },
+      { "src": "/manifest.json", "dest": "/build/manifest.json" },
+      { "src": "/logo192.png", "dest": "/build/logo192.png" },
+      { "src": "/logo512.png", "dest": "/build/logo512.png" },
+      { "src": "/robots.txt", "dest": "/build/robots.txt" },
+      { "src": "/(.*)", "dest": "/server.js" }
     ]
   }
