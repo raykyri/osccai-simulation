@@ -8,6 +8,12 @@ This application simulates the core functionality of the "Collective Constitutio
 - Visualize opinion clusters using Principal Component Analysis (PCA)
 - Adjust simulation parameters in real-time
 - Interactive Vote Matrix and PCA Projection
+  - (new) Updated to handle pass vs. non-votes
+- (new) Identify top comments for the overall group (using z-score)
+- (new) Identify top comments for k-means clustering groups
+- (new) Visualize top comments, plus full list of comments with stats
+- (new) Express server and CORS proxy for loading reports from Polis
+- (new) Parse and reconcile CSV exports from existing conversations
 
 ## Getting Started
 
