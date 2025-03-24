@@ -995,7 +995,7 @@ const SimulationContent = () => {
       </div>
 
       <div class="footer">
-        Based on <a href="https://github.com/collect-intel/osccai-simulation" target="_blank" noreferrer noopener>OSCCAI simulation code</a> by <a href="https://cip.org" target="_blank" noreferrer noopener>CIP</a>.
+        MIT &copy; {(new Date()).getFullYear()}. Based on <a href="https://github.com/collect-intel/osccai-simulation" target="_blank" noreferrer noopener>OSCCAI simulation code</a> by <a href="https://cip.org" target="_blank" noreferrer noopener>CIP</a>.
       </div>
     </div>
   );
