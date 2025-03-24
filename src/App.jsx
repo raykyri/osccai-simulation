@@ -748,6 +748,10 @@ const SimulationContent = () => {
   return (
     <div className="App">
       <h1>Polis Simulation</h1>
+      <p style={{ maxWidth: "500px", margin: "0 auto 35px" }}>
+        This page implements the Polis consensus algorithm in the browser,
+        with PCA, k-means clustering, and consensus scoring.
+      </p>
 
       {/* Tabs UI */}
       <div className="tabs-container">
@@ -771,7 +775,7 @@ const SimulationContent = () => {
           {activeTab === 'import' && (
             <div className="import-tab">
               <p>
-                Enter the raw data export to analyze
+                Enter the report to analyze
                 <div style={{ fontSize: "80%", color: "#666", marginTop: 2 }}>
                   e.g. https://pol.is/api/v3/reportExport/.../participant-votes.csv
                 </div>
