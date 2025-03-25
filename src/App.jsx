@@ -250,144 +250,6 @@ const SimulationContent = () => {
         }
       });
 
-      // ========== Add Polis statistical calculations as described in STATS.md ==========
-      console.log('Calculating Polis statistics from STATS.md');
-
-      // Create arrays to store top comments for agreement and disagreement
-      let topAgreeComments = [];
-      let topDisagreeComments = [];
-
-      // Create an object to store z-scores for ALL comments
-      const allCommentZScores = {};
-
-      // Helper function for proportion test as described in STATS.md
-      function proportionTest(successes, trials) {
-        // Add pseudocounts as per the implementation
-        const adjustedSuccesses = successes + 1;
-        const adjustedTrials = trials + 1;
-
-        // Calculate z-score: 2 * sqrt(n) * (successes/n - 0.5)
-        return 2 *
-          Math.sqrt(adjustedTrials) *
-          (adjustedSuccesses / adjustedTrials - 0.5);
-      }
-
-      // Helper function to check if z-score is significant at 90% confidence
-      function isSignificantAt90Percent(zScore) {
-        return zScore > 1.2816; // Critical z-value for 90% confidence (one-tailed)
-      }
-
-      // Process each comment - calculate stats for ALL comments
-      commentData.forEach((comment, commentIndex) => {
-        // Initialize counters
-        let agrees = 0;
-        let disagrees = 0;
-        let passes = 0;
-        let totalSeen = 0;
-
-        // Count votes for this comment
-        updatedVoteMatrix.forEach(participantVotes => {
-          const vote = participantVotes[commentIndex];
-
-          // Only count non-null votes as "seen"
-          if (vote !== null) {
-            totalSeen++;
-
-            if (vote === 1) agrees++;
-            else if (vote === -1) disagrees++;
-            else if (vote === 0) passes++;
-          }
-        });
-
-        // 1. Bayesian Agreement Probability Calculation (from STATS.md)
-        const agreementProb = (agrees + 1) / (totalSeen + 2);
-        const disagreementProb = (disagrees + 1) / (totalSeen + 2);
-
-        // 2. Statistical Significance Calculation (from STATS.md)
-        const agreementZScore = proportionTest(agrees, totalSeen);
-        const disagreementZScore = proportionTest(disagrees, totalSeen);
-
-        // Check if statistically significant at 90% confidence
-        const isAgreeSignificant = isSignificantAt90Percent(agreementZScore);
-        const isDisagreeSignificant = isSignificantAt90Percent(disagreementZScore);
-
-        // Composite metrics (agreement/disagreement probability * z-score)
-        const agreementMetric = agreementProb * agreementZScore;
-        const disagreementMetric = disagreementProb * disagreementZScore;
-
-        // Create comment stat object
-        const commentStat = {
-          id: comment.id,
-          commentIndex,
-          text: comment.text,
-          numAgrees: agrees,
-          numDisagrees: disagrees,
-          numPasses: passes,
-          numSeen: totalSeen,
-          agreementProb,
-          disagreementProb,
-          agreementZScore,
-          disagreementZScore,
-          agreementMetric,
-          disagreementMetric,
-          isAgreeSignificant,
-          isDisagreeSignificant
-        };
-
-        // Store z-scores for ALL comments
-        allCommentZScores[commentIndex] = {
-          agreementZScore,
-          disagreementZScore,
-          isAgreeSignificant,
-          isDisagreeSignificant
-        };
-
-        // Then handle top comments collection as before
-        // Check for agreement significance
-        if (agreementProb > 0.5 && isAgreeSignificant) {
-          // Add to top agree comments if eligible
-          if (topAgreeComments.length < 5) {
-            topAgreeComments.push(commentStat);
-            // Sort by agreement metric (highest first)
-            topAgreeComments.sort((a, b) => b.agreementMetric - a.agreementMetric);
-          } else if (agreementMetric > topAgreeComments[4].agreementMetric) {
-            // Replace lowest entry if this one has higher metric
-            topAgreeComments[4] = commentStat;
-            // Re-sort the array
-            topAgreeComments.sort((a, b) => b.agreementMetric - a.agreementMetric);
-          }
-        }
-
-        // Check for disagreement significance
-        if (disagreementProb > 0.5 && isDisagreeSignificant) {
-          // Add to top disagree comments if eligible
-          if (topDisagreeComments.length < 5) {
-            topDisagreeComments.push(commentStat);
-            // Sort by disagreement metric (highest first)
-            topDisagreeComments.sort((a, b) => b.disagreementMetric - a.disagreementMetric);
-          } else if (disagreementMetric > topDisagreeComments[4].disagreementMetric) {
-            // Replace lowest entry if this one has higher metric
-            topDisagreeComments[4] = commentStat;
-            // Re-sort the array
-            topDisagreeComments.sort((a, b) => b.disagreementMetric - a.disagreementMetric);
-          }
-        }
-      });
-
-      // Store the top comments and ALL z-scores in the state
-      const statsData = {
-        consensusComments: {
-          agree: topAgreeComments,
-          disagree: topDisagreeComments
-        },
-        zScores: allCommentZScores  // Store z-scores for ALL comments
-      };
-      setPolisStats(statsData);
-
-      console.log('stats data!!', statsData)
-
-      // ========== End of Polis statistical calculations ==========
-
       // Set the updated vote matrix with nulls for unvoted items
       setVoteMatrix(updatedVoteMatrix);
       setCommentTexts(commentData);
@@ -617,6 +479,151 @@ const SimulationContent = () => {
 
     setGroupConsensusData(newGroupConsensusData);
   }, [groups, voteMatrix, commentTexts]); // Dependencies for this effect
+
+  // Add this useEffect hook to calculate Polis statistics
+  useEffect(() => {
+    // Only run if we have data to analyze
+    if (!voteMatrix || voteMatrix.length === 0 || 
+      !commentTexts || commentTexts.length === 0 ||
+      !groups || groups.length === 0) {
+      return;
+    }
+
+    console.log('Calculating Polis statistics');
+
+    // Create arrays to store top comments for agreement and disagreement
+    let topAgreeComments = [];
+    let topDisagreeComments = [];
+
+    // Create an object to store z-scores for ALL comments
+    const allCommentZScores = {};
+
+    // Helper function for proportion test as described in STATS.md
+    function proportionTest(successes, trials) {
+      // Add pseudocounts as per the implementation
+      const adjustedSuccesses = successes + 1;
+      const adjustedTrials = trials + 1;
+
+      // Calculate z-score: 2 * sqrt(n) * (successes/n - 0.5)
+      return 2 *
+        Math.sqrt(adjustedTrials) *
+        (adjustedSuccesses / adjustedTrials - 0.5);
+    }
+
+    // Helper function to check if z-score is significant at 90% confidence
+    function isSignificantAt90Percent(zScore) {
+      return zScore > 1.2816; // Critical z-value for 90% confidence (one-tailed)
+    }
+
+    // Process each comment - calculate stats for ALL comments
+    commentTexts.forEach((comment, commentIndex) => {
+      // Initialize counters
+      let agrees = 0;
+      let disagrees = 0;
+      let passes = 0;
+      let totalSeen = 0;
+
+      // Count votes for this comment
+      voteMatrix.forEach(participantVotes => {
+        const vote = participantVotes[commentIndex];
+
+        // Only count non-null votes as "seen"
+        if (vote !== null) {
+          totalSeen++;
+
+          if (vote === 1) agrees++;
+          else if (vote === -1) disagrees++;
+          else if (vote === 0) passes++;
+        }
+      });
+
+      // 1. Bayesian Agreement Probability Calculation
+      const agreementProb = (agrees + 1) / (totalSeen + 2);
+      const disagreementProb = (disagrees + 1) / (totalSeen + 2);
+
+      // 2. Statistical Significance Calculation
+      const agreementZScore = proportionTest(agrees, totalSeen);
+      const disagreementZScore = proportionTest(disagrees, totalSeen);
+
+      // Check if statistically significant at 90% confidence
+      const isAgreeSignificant = isSignificantAt90Percent(agreementZScore);
+      const isDisagreeSignificant = isSignificantAt90Percent(disagreementZScore);
+
+      // Composite metrics (agreement/disagreement probability * z-score)
+      const agreementMetric = agreementProb * agreementZScore;
+      const disagreementMetric = disagreementProb * disagreementZScore;
+
+      // Create comment stat object
+      const commentStat = {
+        id: comment.id,
+        commentIndex,
+        text: comment.text,
+        numAgrees: agrees,
+        numDisagrees: disagrees,
+        numPasses: passes,
+        numSeen: totalSeen,
+        agreementProb,
+        disagreementProb,
+        agreementZScore,
+        disagreementZScore,
+        agreementMetric,
+        disagreementMetric,
+        isAgreeSignificant,
+        isDisagreeSignificant
+      };
+
+      // Store z-scores for ALL comments
+      allCommentZScores[commentIndex] = {
+        agreementZScore,
+        disagreementZScore,
+        isAgreeSignificant,
+        isDisagreeSignificant
+      };
+
+      // Check for agreement significance
+      if (agreementProb > 0.5 && isAgreeSignificant) {
+        // Add to top agree comments if eligible
+        if (topAgreeComments.length < 5) {
+          topAgreeComments.push(commentStat);
+          // Sort by agreement metric (highest first)
+          topAgreeComments.sort((a, b) => b.agreementMetric - a.agreementMetric);
+        } else if (agreementMetric > topAgreeComments[4].agreementMetric) {
+          // Replace lowest entry if this one has higher metric
+          topAgreeComments[4] = commentStat;
+          // Re-sort the array
+          topAgreeComments.sort((a, b) => b.agreementMetric - a.agreementMetric);
+        }
+      }
+
+      // Check for disagreement significance
+      if (disagreementProb > 0.5 && isDisagreeSignificant) {
+        // Add to top disagree comments if eligible
+        if (topDisagreeComments.length < 5) {
+          topDisagreeComments.push(commentStat);
+          // Sort by disagreement metric (highest first)
+          topDisagreeComments.sort((a, b) => b.disagreementMetric - a.disagreementMetric);
+        } else if (disagreementMetric > topDisagreeComments[4].disagreementMetric) {
+          // Replace lowest entry if this one has higher metric
+          topDisagreeComments[4] = commentStat;
+          // Re-sort the array
+          topDisagreeComments.sort((a, b) => b.disagreementMetric - a.disagreementMetric);
+        }
+      }
+    });
+
+    // Store the top comments and ALL z-scores in the state
+    const statsData = {
+      consensusComments: {
+        agree: topAgreeComments,
+        disagree: topDisagreeComments
+      },
+      zScores: allCommentZScores
+    };
+    
+    setPolisStats(statsData);
+    console.log('Polis stats calculated:', statsData);
+    
+  }, [voteMatrix, commentTexts]); // Recalculate when vote matrix or comments change
 
   const handleReset = () => {
     setUsingImportedData(false);
