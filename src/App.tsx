@@ -1,13 +1,13 @@
 import React, { useEffect, useCallback, useState, useMemo } from 'react';
-import { SimulationProvider, useSimulation } from './context/SimulationContext.jsx';
-import VoteMatrix from './components/VoteMatrix.jsx';
-import PCAProjection from './components/PCAProjection.jsx';
-import GroupAnalysis from './components/GroupAnalysis.jsx';
-import SimulationControls from './components/SimulationControls.jsx';
-import useVoteMatrix from './hooks/useVoteMatrix.js';
-import usePCA from './hooks/usePCA.js';
-import useGroupIdentification from './hooks/useGroupIdentification.js';
-import { debug } from './utils/debug.js';
+import { SimulationProvider, useSimulation } from './context/SimulationContext.tsx';
+import VoteMatrix from './components/VoteMatrix.tsx';
+import PCAProjection from './components/PCAProjection.tsx';
+import GroupAnalysis from './components/GroupAnalysis.tsx';
+import SimulationControls from './components/SimulationControls.tsx';
+import useVoteMatrix from './hooks/useVoteMatrix.ts';
+import usePCA from './hooks/usePCA.ts';
+import useGroupIdentification from './hooks/useGroupIdentification.ts';
+import { debug } from './utils/debug.ts';
 import Papa from 'papaparse';
 import './App.css';
 
@@ -235,7 +235,7 @@ const SimulationContent = () => {
       const commentIdMap = commentData.map(c => c.id);
 
       // Create a new vote matrix with null values by default
-      const updatedVoteMatrix = Array(participantIdMap.length).fill().map(() =>
+      const updatedVoteMatrix = Array(participantIdMap.length).fill(null).map(() =>
         Array(commentIdMap.length).fill(null)
       );
 
@@ -1062,9 +1062,9 @@ const SimulationContent = () => {
         </table>
       </div>
 
-      <div class="footer">
-        <p><a href="https://github.com/raykyri/osccai-simulation" target="_blank" noreferrer noopener>Github</a></p>
-        <p>MIT &copy; {(new Date()).getFullYear()}. Based on <a href="https://github.com/collect-intel/osccai-simulation" target="_blank" noreferrer noopener>OSCCAI simulation</a> by <a href="https://cip.org" target="_blank" noreferrer noopener>CIP</a>.</p>
+      <div className="footer">
+        <p><a href="https://github.com/raykyri/osccai-simulation" target="_blank" rel="noreferrer noopener">Github</a></p>
+        <p>MIT &copy; {(new Date()).getFullYear()}. Based on <a href="https://github.com/collect-intel/osccai-simulation" target="_blank" rel="noreferrer noopener">OSCCAI simulation</a> by <a href="https://cip.org" target="_blank" rel="noreferrer noopener">CIP</a>.</p>
       </div>
     </div>
   );

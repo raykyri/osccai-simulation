@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App.jsx';
-import reportWebVitals from './reportWebVitals.js';
+import App from './App.tsx';
 
 // Add this warning suppression code
 const originalConsoleError = console.error;

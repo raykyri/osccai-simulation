@@ -1,5 +1,4 @@
-import { findOptimalClusters } from '../utils/silhouetteCoefficient.js';
-import { debug, DEBUG } from '../utils/debug.js';
+import { findOptimalClusters } from '../utils/silhouetteCoefficient.ts';
 
 // If running from command line, pass arguments to debug module
 if (typeof process !== 'undefined' && process.argv) {

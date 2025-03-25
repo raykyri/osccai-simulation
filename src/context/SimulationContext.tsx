@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { debug } from '../utils/debug.js';
-import { findOptimalClusters, getBestK } from '../utils/silhouetteCoefficient.js';
+import { debug } from '../utils/debug.ts';
+import { findOptimalClusters, getBestK } from '../utils/silhouetteCoefficient.ts';
 
 const DEFAULT_PARTICIPANTS = 50;
 const DEFAULT_COMMENTS = 50;

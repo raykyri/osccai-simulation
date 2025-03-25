@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { pca } from '../utils/pca.js';
-import { debug } from '../utils/debug.js';
+import { pca } from '../utils/pca.ts';
+import { debug } from '../utils/debug.ts';
 
 const usePCA = (voteMatrix) => {
   const performPCA = useCallback(() => {
