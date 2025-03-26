@@ -234,7 +234,11 @@ const SimulationContent = () => {
 
       // Parse CSV to JSON with our custom parsers
       const { metadata, data: originalVoteData } = parseVoteMatrixCSV(votesData);
-      const commentData = parseCommentsCSV(commentsData);
+      const allCommentData = parseCommentsCSV(commentsData);
+      
+      // Filter out comment 227
+      const commentData = allCommentData.filter(comment => comment.id !== '227');
+      
       const participantVotes = parseVotesLogCSV(votesLogData);
 
       // Create lookup maps for participants and comments
