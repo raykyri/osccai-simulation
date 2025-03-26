@@ -363,8 +363,8 @@ const SimulationContent = () => {
   }, [voteMatrix, commentTexts.length]); // Only recalculate when vote matrix changes or comment length changes
 
   useEffect(() => {
-    // Only calculate if we have vote data
-    if (!voteMatrix || voteMatrix.length === 0 || !voteMatrix[0]) {
+    // Only calculate if we have vote data AND groups have been identified
+    if (!voteMatrix || voteMatrix.length === 0 || !voteMatrix[0] || !groups || groups.length === 0) {
       setTopConsensusComments([]);
       return;
     }
@@ -420,7 +420,7 @@ const SimulationContent = () => {
     topConsensus.reverse()
 
     setTopConsensusComments(topConsensus);
-  }, [voteMatrix, commentTexts]); // Dependencies for this effect
+  }, [voteMatrix, commentTexts, groups]); // Add groups to dependencies
 
   useEffect(() => {
     // Skip calculations if no groups or no vote matrix
@@ -487,12 +487,13 @@ const SimulationContent = () => {
     setGroupConsensusData(newGroupConsensusData);
   }, [groups, voteMatrix, commentTexts]); // Dependencies for this effect
 
-  // Add this useEffect hook to calculate Polis statistics
+  // Modify the Polis statistics useEffect
   useEffect(() => {
-    // Only run if we have data to analyze
+    // Only run if we have data to analyze AND groups have been identified
     if (!voteMatrix || voteMatrix.length === 0 ||
       !commentTexts || commentTexts.length === 0 ||
       !groups || groups.length === 0) {
+      setPolisStats(null);
       return;
     }
 
@@ -630,7 +631,7 @@ const SimulationContent = () => {
     setPolisStats(statsData);
     console.log('Polis stats calculated:', statsData);
 
-  }, [voteMatrix, commentTexts]); // Recalculate when vote matrix or comments change
+  }, [voteMatrix, commentTexts, groups]); // Add groups as a dependency
 
   // New useEffect hook to run statistics calculations after polisStats is computed
   useEffect(() => {
