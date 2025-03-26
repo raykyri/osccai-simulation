@@ -152,12 +152,27 @@
 .consensus-table {
   width: 100%;
   border-collapse: collapse;
+  margin-bottom: 20px;
 }
 
-.consensus-table th, .consensus-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
+.consensus-table tr {
+  border-bottom: 1px solid #eee;
+}
+
+.consensus-table tr:last-child {
+  border-bottom: none;
+}
+
+.comment-cell {
+  width: 300px;
+  padding: 10px;
+  vertical-align: top;
   text-align: left;
+}
+
+.consensus-cell {
+  padding: 10px;
+  vertical-align: middle;
 }
 
 .vote-bar {
@@ -348,6 +363,7 @@
   text-align: left;
   white-space: normal; /* Allow text to wrap */
   word-wrap: break-word; /* Break long words if needed */
+  max-width: 100%;
 }
 
 .consensus-bar-wrapper {
@@ -356,6 +372,7 @@
   border-radius: 4px;
   overflow: hidden;
   margin-top: 10px;
+  margin-bottom: 8px;
 }
 
 .consensus-bar {
@@ -482,7 +499,7 @@
 }
 
 .pass-bar {
-  background-color: #999999; /* Changed from #FFEB3B (yellow) to #999999 (darker gray) */
+  background-color: #999999; /* Gray */
   height: 100%;
 }
 
@@ -600,4 +617,3 @@
     width: 100%;
   }
 }
-

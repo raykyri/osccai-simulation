@@ -764,94 +764,104 @@ const SimulationContent = () => {
     });
 
     return (
-      <div className="consensus-chart">
-        {sortedComments.map((comment) => {
-          // Use the values directly from the comment object
-          const agrees = comment.numAgrees || comment.agrees || 0;
-          const disagrees = comment.numDisagrees || comment.disagrees || 0;
-          const totalSeen = comment.numSeen || comment.totalVotes || 0;
+      <table className="consensus-table">
+        <thead>
+          <tr>
+            <th className="comment-header">Comment</th>
+            <th className="stats-header">Overall</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedComments.map((comment) => {
+            // Use the values directly from the comment object
+            const agrees = comment.numAgrees || comment.agrees || 0;
+            const disagrees = comment.numDisagrees || comment.disagrees || 0;
+            const totalSeen = comment.numSeen || comment.totalVotes || 0;
 
-          // Use the passes value if provided, otherwise calculate it
-          let passes = comment.numPasses || 0;
-          let noVotes = 0;
+            // Use the passes value if provided, otherwise calculate it
+            let passes = comment.numPasses || 0;
+            let noVotes = 0;
 
-          // Only calculate passes and noVotes if they're not provided
-          if (voteMatrix && voteMatrix.length > 0 && !comment.numPasses) {
-            voteMatrix.forEach(participantVotes => {
-              const vote = participantVotes[comment.commentId || comment.commentIndex];
-              if (vote === 0) passes++;
-              if (vote === null) noVotes++;
-            });
-          }
+            // Only calculate passes and noVotes if they're not provided
+            if (voteMatrix && voteMatrix.length > 0 && !comment.numPasses) {
+              voteMatrix.forEach(participantVotes => {
+                const vote = participantVotes[comment.commentId || comment.commentIndex];
+                if (vote === 0) passes++;
+                if (vote === null) noVotes++;
+              });
+            }
 
-          // Calculate percentages based on TOTAL participants
-          const agreePercent = (agrees / totalParticipants) * 100;
-          const disagreePercent = (disagrees / totalParticipants) * 100;
-          const passPercent = (passes / totalParticipants) * 100;
-          const noVotePercent = (noVotes / totalParticipants) * 100;
+            // Calculate percentages based on TOTAL participants
+            const agreePercent = (agrees / totalParticipants) * 100;
+            const disagreePercent = (disagrees / totalParticipants) * 100;
+            const passPercent = (passes / totalParticipants) * 100;
+            const noVotePercent = (noVotes / totalParticipants) * 100;
 
-          // Get comment index from either format
-          const commentIndex = comment.commentId !== undefined ? comment.commentId : comment.commentIndex;
+            // Get comment index from either format
+            const commentIndex = comment.commentId !== undefined ? comment.commentId : comment.commentIndex;
 
-          // Calculate vote percentages for the text label (out of those who voted)
-          const totalVotes = agrees + disagrees + passes;
-          const agreeVotePercent = totalVotes > 0 ? (agrees / totalVotes) * 100 : 0;
-          const disagreeVotePercent = totalVotes > 0 ? (disagrees / totalVotes) * 100 : 0;
-          const passVotePercent = totalVotes > 0 ? (passes / totalVotes) * 100 : 0;
+            // Calculate vote percentages for the text label (out of those who voted)
+            const totalVotes = agrees + disagrees + passes;
+            const agreeVotePercent = totalVotes > 0 ? (agrees / totalVotes) * 100 : 0;
+            const disagreeVotePercent = totalVotes > 0 ? (disagrees / totalVotes) * 100 : 0;
+            const passVotePercent = totalVotes > 0 ? (passes / totalVotes) * 100 : 0;
 
-          return (
-            <div key={commentIndex} className="consensus-bar-container">
-              <div className="consensus-label">
-                <div className="comment-text-preview">
-                  <span className="comment-id-text">
-                    {commentTexts?.[commentIndex]?.id || `Comment ${commentIndex + 1}`}:
-                  </span>
-                  {comment.text || comment.commentText}
-                </div>
-              </div>
-              <div className="consensus-bar-wrapper">
-                <div className="consensus-bar-multi">
-                  <div
-                    className="agree-bar"
-                    style={{
-                      width: `${agreePercent}%`,
-                    }}
-                    title={`${Math.round(agreePercent)}% of all participants agree (${agrees} votes)`}
-                  />
-                  <div
-                    className="disagree-bar"
-                    style={{
-                      width: `${disagreePercent}%`,
-                    }}
-                    title={`${Math.round(disagreePercent)}% of all participants disagree (${disagrees} votes)`}
-                  />
-                  <div
-                    className="pass-bar"
-                    style={{
-                      width: `${passPercent}%`,
-                    }}
-                    title={`${Math.round(passPercent)}% of all participants pass (${passes} votes)`}
-                  />
-                  <div
-                    className="no-vote-bar"
-                    style={{
-                      width: `${noVotePercent}%`,
-                    }}
-                    title={`${Math.round(noVotePercent)}% of all participants didn't vote (${noVotes} participants)`}
-                  />
-                </div>
-              </div>
-              <div className="consensus-stats">
-                <div className="vote-breakdown">
-                  <span className="agree-count">{agrees} agree ({Math.round(agreeVotePercent)}%)</span>
-                  <span className="disagree-count">{disagrees} disagree ({Math.round(disagreeVotePercent)}%)</span>
-                  <span className="pass-count">{passes} pass ({Math.round(passVotePercent)}%)</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            return (
+              <tr key={commentIndex}>
+                <td className="comment-cell">
+                  <div className="comment-text-preview">
+                    <span className="comment-id-text">
+                      {commentTexts?.[commentIndex]?.id || `Comment ${commentIndex + 1}`}:
+                    </span>
+                    {comment.text || comment.commentText}
+                  </div>
+                </td>
+                <td className="consensus-cell">
+                  <div className="consensus-bar-wrapper">
+                    <div className="consensus-bar-multi">
+                      <div
+                        className="agree-bar"
+                        style={{
+                          width: `${agreePercent}%`,
+                        }}
+                        title={`${Math.round(agreePercent)}% of all participants agree (${agrees} votes)`}
+                      />
+                      <div
+                        className="disagree-bar"
+                        style={{
+                          width: `${disagreePercent}%`,
+                        }}
+                        title={`${Math.round(disagreePercent)}% of all participants disagree (${disagrees} votes)`}
+                      />
+                      <div
+                        className="pass-bar"
+                        style={{
+                          width: `${passPercent}%`,
+                        }}
+                        title={`${Math.round(passPercent)}% of all participants pass (${passes} votes)`}
+                      />
+                      <div
+                        className="no-vote-bar"
+                        style={{
+                          width: `${noVotePercent}%`,
+                        }}
+                        title={`${Math.round(noVotePercent)}% of all participants didn't vote (${noVotes} participants)`}
+                      />
+                    </div>
+                  </div>
+                  <div className="consensus-stats">
+                    <div className="vote-breakdown">
+                      <span className="agree-count">{agrees} agree ({Math.round(agreeVotePercent)}%)</span>
+                      <span className="disagree-count">{disagrees} disagree ({Math.round(disagreeVotePercent)}%)</span>
+                      <span className="pass-count">{passes} pass ({Math.round(passVotePercent)}%)</span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     );
   };
 
