@@ -10,10 +10,10 @@ import useGroupIdentification from './hooks/useGroupIdentification.ts';
 import { debug } from './utils/debug.ts';
 import Papa from 'papaparse';
 import './App.css';
-import { 
-  addComparativeStats, 
-  selectRepComments, 
-  FinalizedCommentStats 
+import {
+  addComparativeStats,
+  selectRepComments,
+  FinalizedCommentStats
 } from './stats';
 
 const DEFAULT_POLIS_REPORT = 'https://pol.is/api/v3/reportExport/r3nhe9auvzhr36dwaytsk/participant-votes.csv'
@@ -490,7 +490,7 @@ const SimulationContent = () => {
   // Add this useEffect hook to calculate Polis statistics
   useEffect(() => {
     // Only run if we have data to analyze
-    if (!voteMatrix || voteMatrix.length === 0 || 
+    if (!voteMatrix || voteMatrix.length === 0 ||
       !commentTexts || commentTexts.length === 0 ||
       !groups || groups.length === 0) {
       return;
@@ -626,10 +626,10 @@ const SimulationContent = () => {
       },
       zScores: allCommentZScores
     };
-    
+
     setPolisStats(statsData);
     console.log('Polis stats calculated:', statsData);
-    
+
   }, [voteMatrix, commentTexts]); // Recalculate when vote matrix or comments change
 
   // New useEffect hook to run statistics calculations after polisStats is computed
@@ -644,17 +644,17 @@ const SimulationContent = () => {
     try {
       // Prepare input data structure for stats calculations
       const commentStatsWithTid = [];
-      
+
       // For each comment, prepare stats per group
       commentTexts.forEach((comment, commentIndex) => {
         const commentStats = {};
-        
+
         // Calculate stats for each group
         groups.forEach((group, groupIndex) => {
           let agrees = 0;
           let disagrees = 0;
           let totalSeen = 0;
-          
+
           // Count votes from this group
           group.points.forEach(participantIndex => {
             const vote = voteMatrix[participantIndex][commentIndex];
@@ -664,11 +664,11 @@ const SimulationContent = () => {
               else if (vote === -1) disagrees++;
             }
           });
-          
+
           // Calculate base stats
           const agreementProb = (agrees + 1) / (totalSeen + 2);
           const disagreementProb = (disagrees + 1) / (totalSeen + 2);
-          
+
           // Store basic stats for this comment and group
           commentStats[groupIndex] = {
             na: agrees,
@@ -680,39 +680,39 @@ const SimulationContent = () => {
             pdt: polisStats.zScores[commentIndex]?.disagreementZScore || 0
           };
         });
-        
+
         // Add comment with stats to the collection
         commentStatsWithTid.push([commentIndex, commentStats]);
       });
-      
+
       // Process the stats to get comparative stats for each group
       const commentStatsWithComparatives = commentStatsWithTid.map(([tid, groupStats]) => {
         const processedGroupStats = {};
-        
+
         // For each group, add comparative stats
         Object.entries(groupStats).forEach(([groupId, stats]) => {
           // Get stats from all other groups
           const otherGroupStats = Object.entries(groupStats)
             .filter(([gid]) => gid !== groupId)
             .map(([_, stats]) => stats);
-          
+
           // Add comparative stats
           processedGroupStats[groupId] = addComparativeStats(stats, otherGroupStats);
         });
-        
+
         return [tid, processedGroupStats];
       });
-      
+
       // Select representative comments for each group
       const representativeComments = selectRepComments(commentStatsWithComparatives);
-      
+
       // Store results in state
       setRepComments(representativeComments);
       console.log('Representative comments calculated:', representativeComments);
     } catch (error) {
       console.error('Error calculating representative comments:', error);
     }
-    
+
   }, [polisStats, groups, voteMatrix, commentTexts]); // Run when polisStats or groups change
 
   const handleReset = () => {
@@ -1069,7 +1069,7 @@ const SimulationContent = () => {
             {groups.map((group, groupIndex) => {
               // Use the representative comments for this group instead of consensus data
               const groupRepComments = repComments && repComments[groupIndex] ? repComments[groupIndex] : [];
-              
+
               // Format comments for the ConsensusBarChart component
               const formattedComments = groupRepComments.map(comment => ({
                 commentIndex: comment.tid,
@@ -1105,74 +1105,6 @@ const SimulationContent = () => {
             })}
           </div>
         )}
-      </div>
-
-      <div className="group-aware-consensus">
-        <h2>Group-Aware Consensus</h2>
-        <div>
-          <label>Minimum Consensus Threshold: </label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={consensusThreshold}
-            onChange={(e) => setConsensusThreshold(Number(e.target.value))}
-          />
-          <span>{consensusThreshold.toFixed(2)}</span>
-        </div>
-        {repComments ? (
-          <table className="consensus-table">
-            <thead>
-              <tr>
-                <th>Comment</th>
-                <th>Representative For</th>
-                <th>Group</th>
-                <th>Rep Score</th>
-                <th>Agree %</th>
-                <th>Agree Z-Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(repComments).flatMap(([groupId, comments]) => 
-                comments.map((comment) => {
-                  const commentText = commentTexts?.[comment.tid]?.text || `Comment ${comment.tid + 1}`;
-                  const agreementPercentage = (comment.p_success * 100).toFixed(1);
-                  return (
-                    <tr key={`${groupId}-${comment.tid}`}>
-                      <td>
-                        <button 
-                          onClick={() => highlightComment(comment.tid)}
-                          title={commentText}
-                        >
-                          {commentText.length > 40 ? `${commentText.substring(0, 40)}...` : commentText}
-                        </button>
-                      </td>
-                      <td>{comment.repful_for}</td>
-                      <td>Group {parseInt(groupId) + 1}</td>
-                      <td>{(comment.repness * comment.repness_test).toFixed(2)}</td>
-                      <td>{agreementPercentage}%</td>
-                      <td>{comment.p_test.toFixed(2)}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        ) : (
-          <div>
-            {groups.length === 0 ? 
-              "No groups identified yet. Representative comments will be calculated after clustering." : 
-              "Calculating representative comments..."}
-          </div>
-        )}
-        
-        <div className="explanation">
-          <p>
-            This table shows comments that are especially representative for each opinion group.
-            A high representativeness score indicates that the comment distinguishes this group from others.
-          </p>
-        </div>
       </div>
 
       <div className="footer">
