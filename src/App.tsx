@@ -241,8 +241,14 @@ const SimulationContent = () => {
       
       const participantVotes = parseVotesLogCSV(votesLogData);
 
+      // Filter participants who have voted on less than 7 comments
+      const filteredMetadata = metadata.filter(participant => {
+        // n-votes field already contains the count of votes for this participant
+        return participant['n-votes'] >= 7;
+      });
+      
       // Create lookup maps for participants and comments
-      const participantIdMap = metadata.map(p => p.participant);
+      const participantIdMap = filteredMetadata.map(p => p.participant);
       const commentIdMap = commentData.map(c => c.id);
 
       // Create a new vote matrix with null values by default
@@ -250,7 +256,7 @@ const SimulationContent = () => {
         Array(commentIdMap.length).fill(null)
       );
 
-      // Fill in the vote matrix based on the votes log
+      // Fill in the vote matrix based on the votes log, using only filtered participants
       participantIdMap.forEach((participantId, participantIndex) => {
         if (participantVotes[participantId]) {
           commentIdMap.forEach((commentId, commentIndex) => {
@@ -260,6 +266,8 @@ const SimulationContent = () => {
           });
         }
       });
+
+      console.log(`Filtered out ${metadata.length - filteredMetadata.length} participants with fewer than 7 votes`);
 
       // Set the updated vote matrix with nulls for unvoted items
       setVoteMatrix(updatedVoteMatrix);
