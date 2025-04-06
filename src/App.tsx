@@ -998,8 +998,9 @@ const SimulationContent = () => {
     <div className="App">
       <h1>Polis Simulation</h1>
       <p style={{ maxWidth: "500px", margin: "0 auto 35px" }}>
-        This page implements the Polis consensus algorithm in the browser,
-        with PCA, k-means clustering, and consensus scoring.
+        This page implements Polis collaborative polling algorithms in the browser,
+        including PCA, k-means clustering, and consensus scoring.{" "}
+        <strong>This implementation has not been audited, and should be considered an early research prototype.</strong>
       </p>
 
       {/* Tabs UI */}
