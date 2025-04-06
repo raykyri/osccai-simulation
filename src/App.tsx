@@ -10,11 +10,6 @@ import useGroupIdentification from './hooks/useGroupIdentification.ts';
 import { debug } from './utils/debug.ts';
 import Papa from 'papaparse';
 import './App.css';
-import {
-  addComparativeStats,
-  selectRepComments,
-  FinalizedCommentStats
-} from './stats';
 
 const DEFAULT_POLIS_REPORT = 'https://pol.is/api/v3/reportExport/r3nhe9auvzhr36dwaytsk/participant-votes.csv'
 
