@@ -167,6 +167,10 @@ const SimulationContent = () => {
 
   const [repComments, setRepComments] = useState(null);
 
+  const [groupZScores, setGroupZScores] = useState(null);
+
+  const [expandedCommentIndex, setExpandedCommentIndex] = useState(null);
+
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
 
@@ -652,20 +656,42 @@ const SimulationContent = () => {
       return;
     }
 
-    console.log('Calculating representative comments using stats.tsx module');
+    console.log('Calculating representative comments and group-specific z-scores');
 
     try {
       // Prepare input data structure for stats calculations
       const commentStatsWithTid = [];
+      // Create an object to store group-specific z-scores for all comments
+      const groupSpecificZScores = {};
+
+      // Helper function for proportion test from the first useEffect
+      function proportionTest(successes, trials) {
+        // Add pseudocounts as per the implementation
+        const adjustedSuccesses = successes + 1;
+        const adjustedTrials = trials + 2;
+
+        // Calculate z-score: 2 * sqrt(n) * (successes/n - 0.5)
+        return 2 *
+          Math.sqrt(adjustedTrials) *
+          (adjustedSuccesses / adjustedTrials - 0.5);
+      }
+
+      // Helper function to check if z-score is significant at 90% confidence
+      function isSignificantAt90Percent(zScore) {
+        return zScore > 1.2816; // Critical z-value for 90% confidence (one-tailed)
+      }
 
       // For each comment, prepare stats per group
       commentTexts.forEach((comment, commentIndex) => {
         const commentStats = {};
+        // Create structure for this comment's group-specific z-scores
+        groupSpecificZScores[commentIndex] = {};
 
         // Calculate stats for each group
         groups.forEach((group, groupIndex) => {
           let agrees = 0;
           let disagrees = 0;
+          let passes = 0;
           let totalSeen = 0;
 
           // Count votes from this group
@@ -675,6 +701,7 @@ const SimulationContent = () => {
               totalSeen++;
               if (vote === 1) agrees++;
               else if (vote === -1) disagrees++;
+              else if (vote === 0) passes++;
             }
           });
 
@@ -682,7 +709,27 @@ const SimulationContent = () => {
           const agreementProb = (agrees + 1) / (totalSeen + 2);
           const disagreementProb = (disagrees + 1) / (totalSeen + 2);
 
-          // Store basic stats for this comment and group
+          // Calculate group-specific z-scores
+          const agreementZScore = proportionTest(agrees, totalSeen);
+          const disagreementZScore = proportionTest(disagrees, totalSeen);
+          
+          // Check significance
+          const isAgreeSignificant = isSignificantAt90Percent(agreementZScore);
+          const isDisagreeSignificant = isSignificantAt90Percent(disagreementZScore);
+
+          // Store group-specific z-scores
+          groupSpecificZScores[commentIndex][groupIndex] = {
+            agreementZScore,
+            disagreementZScore,
+            isAgreeSignificant,
+            isDisagreeSignificant,
+            agrees,
+            disagrees,
+            passes,
+            totalSeen
+          };
+
+          // Store basic stats for this comment and group (as before)
           commentStats[groupIndex] = {
             na: agrees,
             nd: disagrees,
@@ -697,6 +744,9 @@ const SimulationContent = () => {
         // Add comment with stats to the collection
         commentStatsWithTid.push([commentIndex, commentStats]);
       });
+
+      // Store the group-specific z-scores in state
+      setGroupZScores(groupSpecificZScores);
 
       // Process the stats to get comparative stats for each group
       const commentStatsWithComparatives = commentStatsWithTid.map(([tid, groupStats]) => {
@@ -726,7 +776,7 @@ const SimulationContent = () => {
       console.error('Error calculating representative comments:', error);
     }
 
-  }, [polisStats, groups, voteMatrix, commentTexts]); // Run when polisStats or groups change
+  }, [voteMatrix, commentTexts, groups, polisStats]); // Run when polisStats or groups change
 
   const handleReset = () => {
     setUsingImportedData(false);
@@ -769,6 +819,11 @@ const SimulationContent = () => {
           <tr>
             <th className="comment-header">Comment</th>
             <th className="stats-header">Overall</th>
+            {groups && groups.length > 0 && groups.map((group, groupIndex) => (
+              <th key={groupIndex} className="stats-header">
+                Group {groupIndex + 1} ({group.points.length})
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -857,6 +912,82 @@ const SimulationContent = () => {
                     </div>
                   </div>
                 </td>
+                
+                {groups && groups.length > 0 && groups.map((group, groupIndex) => {
+                  // Calculate stats for just this group
+                  let groupAgrees = 0;
+                  let groupDisagrees = 0;
+                  let groupPasses = 0;
+                  let groupNoVotes = 0;
+                  
+                  if (voteMatrix) {
+                    group.points.forEach(participantIndex => {
+                      const vote = voteMatrix[participantIndex][commentIndex];
+                      if (vote === 1) groupAgrees++;
+                      else if (vote === -1) groupDisagrees++;
+                      else if (vote === 0) groupPasses++;
+                      else groupNoVotes++;
+                    });
+                  }
+                  
+                  const groupTotal = group.points.length;
+                  const groupTotalVotes = groupAgrees + groupDisagrees + groupPasses;
+                  
+                  // Calculate percentages for this group
+                  const groupAgreePercent = (groupAgrees / groupTotal) * 100;
+                  const groupDisagreePercent = (groupDisagrees / groupTotal) * 100;
+                  const groupPassPercent = (groupPasses / groupTotal) * 100;
+                  const groupNoVotePercent = (groupNoVotes / groupTotal) * 100;
+                  
+                  // Calculate vote percentages out of those who voted in this group
+                  const groupAgreeVotePercent = groupTotalVotes > 0 ? (groupAgrees / groupTotalVotes) * 100 : 0;
+                  const groupDisagreeVotePercent = groupTotalVotes > 0 ? (groupDisagrees / groupTotalVotes) * 100 : 0;
+                  const groupPassVotePercent = groupTotalVotes > 0 ? (groupPasses / groupTotalVotes) * 100 : 0;
+
+                  return (
+                    <td key={groupIndex} className="consensus-cell">
+                      <div className="consensus-bar-wrapper">
+                        <div className="consensus-bar-multi">
+                          <div
+                            className="agree-bar"
+                            style={{
+                              width: `${groupAgreePercent}%`,
+                            }}
+                            title={`${Math.round(groupAgreePercent)}% of Group ${groupIndex + 1} agree (${groupAgrees} votes)`}
+                          />
+                          <div
+                            className="disagree-bar"
+                            style={{
+                              width: `${groupDisagreePercent}%`,
+                            }}
+                            title={`${Math.round(groupDisagreePercent)}% of Group ${groupIndex + 1} disagree (${groupDisagrees} votes)`}
+                          />
+                          <div
+                            className="pass-bar"
+                            style={{
+                              width: `${groupPassPercent}%`,
+                            }}
+                            title={`${Math.round(groupPassPercent)}% of Group ${groupIndex + 1} pass (${groupPasses} votes)`}
+                          />
+                          <div
+                            className="no-vote-bar"
+                            style={{
+                              width: `${groupNoVotePercent}%`,
+                            }}
+                            title={`${Math.round(groupNoVotePercent)}% of Group ${groupIndex + 1} didn't vote (${groupNoVotes} participants)`}
+                          />
+                        </div>
+                      </div>
+                      <div className="consensus-stats">
+                        <div className="vote-breakdown">
+                          <span className="agree-count">{groupAgrees} ({Math.round(groupAgreeVotePercent)}%)</span>
+                          <span className="disagree-count">{groupDisagrees} ({Math.round(groupDisagreeVotePercent)}%)</span>
+                          <span className="pass-count">{groupPasses} ({Math.round(groupPassVotePercent)}%)</span>
+                        </div>
+                      </div>
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}
@@ -969,45 +1100,114 @@ const SimulationContent = () => {
                    zScoreData.isDisagreeSignificant ? 'Disagree*' : '-')
                   : '-';
 
+                // Toggle expanded view for this comment
+                const toggleExpanded = () => {
+                  setExpandedCommentIndex(expandedCommentIndex === index ? null : index);
+                };
+
                 return (
-                  <tr key={index}
+                  <React.Fragment key={index}>
+                    <tr
                       onClick={() => highlightComment(index)}
                       className={highlightedComment === index ? 'highlighted-comment' : ''}>
-                    <td>{comment.id}</td>
-                    <td>{comment.text}</td>
-                    <td className="vote-cell">
-                      <div className="vote-count">{comment.agrees}</div>
-                      {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
-                        <div className="vote-percent">
-                          {Math.round((comment.agrees / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
-                        </div>
+                      <td>{comment.id}</td>
+                      <td>
+                        {comment.text}
+                        {groupZScores && groups.length > 0 && (
+                          <button 
+                            className="toggle-group-scores-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpanded();
+                            }}
+                          >
+                            {expandedCommentIndex === index ? 'Hide Group Scores' : 'Show Group Scores'}
+                          </button>
+                        )}
+                      </td>
+                      <td className="vote-cell">
+                        <div className="vote-count">{comment.agrees}</div>
+                        {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
+                          <div className="vote-percent">
+                            {Math.round((comment.agrees / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
+                          </div>
+                        )}
+                      </td>
+                      <td className="vote-cell">
+                        <div className="vote-count">{comment.disagrees}</div>
+                        {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
+                          <div className="vote-percent">
+                            {Math.round((comment.disagrees / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
+                          </div>
+                        )}
+                      </td>
+                      <td className="vote-cell">
+                        <div className="vote-count">{comment.passes || 0}</div>
+                        {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
+                          <div className="vote-percent">
+                            {Math.round(((comment.passes || 0) / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
+                          </div>
+                        )}
+                      </td>
+                      {polisStats && (
+                        <>
+                          <td>{zScoreData ? zScoreData.agreementZScore.toFixed(2) : '-'}</td>
+                          <td>{zScoreData ? zScoreData.disagreementZScore.toFixed(2) : '-'}</td>
+                          <td>{isSignificant}</td>
+                        </>
                       )}
-                    </td>
-                    <td className="vote-cell">
-                      <div className="vote-count">{comment.disagrees}</div>
-                      {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
-                        <div className="vote-percent">
-                          {Math.round((comment.disagrees / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
-                        </div>
-                      )}
-                    </td>
-                    <td className="vote-cell">
-                      <div className="vote-count">{comment.passes || 0}</div>
-                      {(comment.agrees || comment.disagrees || comment.passes) > 0 && (
-                        <div className="vote-percent">
-                          {Math.round(((comment.passes || 0) / (comment.agrees + comment.disagrees + (comment.passes || 0))) * 100)}%
-                        </div>
-                      )}
-                    </td>
-                    {polisStats && (
-                      <>
-                        <td>{zScoreData ? zScoreData.agreementZScore.toFixed(2) : '-'}</td>
-                        <td>{zScoreData ? zScoreData.disagreementZScore.toFixed(2) : '-'}</td>
-                        <td>{isSignificant}</td>
-                      </>
+                      <td>{comment.author_id}</td>
+                    </tr>
+                    
+                    {/* Group-specific z-scores expanded view */}
+                    {expandedCommentIndex === index && groupZScores && (
+                      <tr className="group-scores-row">
+                        <td colSpan={polisStats ? 9 : 6}>
+                          <div className="group-scores-container">
+                            <h4>Group-Specific Z-Scores for Comment #{comment.id}</h4>
+                            <table className="group-scores-table">
+                              <thead>
+                                <tr>
+                                  <th>Group</th>
+                                  <th>Agrees</th>
+                                  <th>Disagrees</th>
+                                  <th>Passes</th>
+                                  <th>Total Votes</th>
+                                  <th>Agree Z-Score</th>
+                                  <th>Disagree Z-Score</th>
+                                  <th>Significance</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {groups.map((group, groupIndex) => {
+                                  const groupData = groupZScores[index]?.[groupIndex];
+                                  
+                                  if (!groupData) return null;
+                                  
+                                  const groupSignificant = 
+                                    groupData.isAgreeSignificant ? 'Agree*' :
+                                    groupData.isDisagreeSignificant ? 'Disagree*' : '-';
+                                    
+                                  return (
+                                    <tr key={groupIndex}>
+                                      <td>Group {groupIndex + 1}</td>
+                                      <td>{groupData.agrees}</td>
+                                      <td>{groupData.disagrees}</td>
+                                      <td>{groupData.passes}</td>
+                                      <td>{groupData.totalSeen}</td>
+                                      <td>{groupData.agreementZScore.toFixed(2)}</td>
+                                      <td>{groupData.disagreementZScore.toFixed(2)}</td>
+                                      <td>{groupSignificant}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                    <td>{comment.author_id}</td>
-                  </tr>
+                  </React.Fragment>
                 );
               })}
             </tbody>
