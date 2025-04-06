@@ -169,10 +169,10 @@ const SimulationContent = () => {
 
   const [groupZScores, setGroupZScores] = useState(null);
 
-  const [sortBy, setSortBy] = useState('overall'); // Changed from 'id' to 'overall'
-  const [sortDirection, setSortDirection] = useState('desc'); // Keep desc as default for z-scores
-
+  const [sortBy, setSortBy] = useState('overall'); // 'overall', 'groupZ-N', 'id'
+  const [sortDirection, setSortDirection] = useState('desc');
   const [selectedZScoreGroup, setSelectedZScoreGroup] = useState('overall');
+  const [sortType, setSortType] = useState('z-score'); // 'z-score' or 'vote-count'
 
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
@@ -1001,26 +1001,36 @@ const SimulationContent = () => {
     );
   };
 
-  // Modify the handle sort function to be smarter with the dropdown selection
+  // Modify the handle sort function to support the new sort type
   const handleSortChange = (sortField) => {
     // If clicking on a z-score column, use the currently selected group for sorting
     if (sortField === 'overallZ') {
-      if (sortBy === selectedZScoreGroup) {
-        // Toggle direction if already sorting by this field
+      if (sortBy === selectedZScoreGroup && sortType === 'z-score') {
+        // Toggle direction if already sorting by this field and type
         setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
       } else {
-        // Set new sort by the selected group
+        // Set new sort by the selected group with z-score type
         setSortBy(selectedZScoreGroup);
+        setSortType('z-score');
         setSortDirection('desc');
       }
-    } else {
-      // For non-z-score columns like ID, use the original logic
-      if (sortBy === sortField) {
-        // Toggle sort direction if clicking the same field
+    } else if (sortField === 'votes') {
+      if (sortBy === selectedZScoreGroup && sortType === 'vote-count') {
+        // Toggle direction if already sorting by votes
         setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
       } else {
-        // Set new sort field and default to descending order
+        // Set new sort by votes for the selected group
+        setSortBy(selectedZScoreGroup);
+        setSortType('vote-count');
+        setSortDirection('desc'); // Default to showing most votes first
+      }
+    } else {
+      // For other columns like ID, use original logic
+      if (sortBy === sortField) {
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
         setSortBy(sortField);
+        setSortType('default');
         setSortDirection('desc');
       }
     }
@@ -1031,11 +1041,48 @@ const SimulationContent = () => {
     const newGroup = e.target.value;
     setSelectedZScoreGroup(newGroup);
     
-    // If already sorting by z-score, update the sort field to match the new group
+    // If already sorting by the selected group, maintain the current sort type
     if (sortBy === 'overall' || sortBy.startsWith('groupZ-')) {
       setSortBy(newGroup);
+      // Keep the current sort direction and sort type
+    }
+  };
+
+  // Add this function to handle sort type changes
+  const handleSortTypeChange = (e) => {
+    const newSortType = e.target.value;
+    setSortType(newSortType);
+    
+    // Apply the new sort type to the current group
+    if (sortBy === 'overall' || sortBy.startsWith('groupZ-')) {
+      // Keep sorting by the same group but with new sort type
       // Keep the current sort direction
     }
+  };
+
+  // Function to get comment vote count for a specific group
+  const getGroupVoteCount = (groupZScores, commentIndex, groupIndex) => {
+    if (!groupZScores || !groupZScores[commentIndex] || !groupZScores[commentIndex][groupIndex]) return 0;
+    const groupData = groupZScores[commentIndex][groupIndex];
+    // Total votes is agrees + disagrees (we don't count passes as votes for significance)
+    return groupData.agrees + groupData.disagrees;
+  };
+
+  // Function to get overall vote count
+  const getOverallVoteCount = (comment) => {
+    return comment.agrees + comment.disagrees;
+  };
+
+  // Function to check if a comment is significant for the selected group
+  const isSignificantForGroup = (zScoreData, groupZScores, commentIndex, selectedGroup) => {
+    if (selectedGroup === 'overall') {
+      return zScoreData && (zScoreData.isAgreeSignificant || zScoreData.isDisagreeSignificant);
+    } else if (selectedGroup.startsWith('groupZ-')) {
+      const groupIndex = parseInt(selectedGroup.split('-')[1]);
+      const groupData = groupZScores?.[commentIndex]?.[groupIndex];
+      return groupData && (groupData.isAgreeSignificant || groupData.isDisagreeSignificant);
+    }
+    return false;
   };
 
   // Add this function to get the max absolute z-score for sorting
@@ -1137,7 +1184,7 @@ const SimulationContent = () => {
         <div className="comments-table-container">
           <div className="table-controls">
             <div className="group-selector">
-              <label htmlFor="zScoreGroup">Sort by Z-Scores for: </label>
+              <label htmlFor="zScoreGroup">Show Data For: </label>
               <select 
                 id="zScoreGroup" 
                 value={selectedZScoreGroup} 
@@ -1150,6 +1197,26 @@ const SimulationContent = () => {
                   </option>
                 ))}
               </select>
+            </div>
+            
+            <div className="sort-type-selector">
+              <label htmlFor="sortType">Sort By: </label>
+              <select 
+                id="sortType" 
+                value={sortType} 
+                onChange={handleSortTypeChange}
+              >
+                <option value="z-score">Z-Score</option>
+                <option value="vote-count">Vote Count</option>
+              </select>
+              
+              <button 
+                className={`sort-direction-toggle ${sortDirection === 'desc' ? 'active' : ''}`}
+                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                title={sortDirection === 'desc' ? 'Sort descending' : 'Sort ascending'}
+              >
+                {sortDirection === 'desc' ? '↓ Highest First' : '↑ Lowest First'}
+              </button>
             </div>
           </div>
 
@@ -1165,9 +1232,11 @@ const SimulationContent = () => {
                 <th>Passes</th>
                 <th onClick={() => handleSortChange('overallZ')} className="sortable-header">
                   Z-Scores (Agree, Disagree) 
-                  {sortBy === 'overall' && (sortDirection === 'asc' ? ' ▲' : ' ▼')}
-                  {sortBy.startsWith('groupZ-') && sortBy === selectedZScoreGroup && 
-                    (sortDirection === 'asc' ? ' ▲' : ' ▼')}
+                  {sortBy !== 'id' && sortType === 'z-score' && (sortDirection === 'asc' ? ' ▲' : ' ▼')}
+                </th>
+                <th onClick={() => handleSortChange('votes')} className="sortable-header">
+                  Votes
+                  {sortBy !== 'id' && sortType === 'vote-count' && (sortDirection === 'asc' ? ' ▲' : ' ▼')}
                 </th>
                 <th>Author</th>
               </tr>
@@ -1178,47 +1247,75 @@ const SimulationContent = () => {
                   // Add sorting metadata to each comment
                   const zScoreData = polisStats?.zScores?.[index];
                   const maxOverallZScore = getMaxZScore(zScoreData);
+                  const overallVoteCount = getOverallVoteCount(comment);
                   
                   return {
                     comment,
                     index,
                     maxOverallZScore,
+                    overallVoteCount,
                     // Add ability to sort by any group's z-score
                     groupZScores: groups?.map((_, groupIndex) => 
                       getGroupMaxZScore(groupZScores, index, groupIndex)
-                    ) || []
+                    ) || [],
+                    // Add ability to sort by vote count for each group
+                    groupVoteCounts: groups?.map((_, groupIndex) => 
+                      getGroupVoteCount(groupZScores, index, groupIndex)
+                    ) || [],
+                    // Check if this comment is significant for the selected group
+                    isSignificant: isSignificantForGroup(zScoreData, groupZScores, index, selectedZScoreGroup)
                   };
                 })
+                // Filter to only show significant comments if sorting by vote count
+                .filter(item => {
+                  if (sortType !== 'vote-count') return true;
+                  return item.isSignificant;
+                })
                 .sort((a, b) => {
-                  // Sort based on the selected field and direction
+                  // Sort based on the selected field, group, and type
                   if (sortBy === 'id') {
                     // Sort by comment ID
                     const idA = parseInt(a.comment.id) || 0;
                     const idB = parseInt(b.comment.id) || 0;
                     return sortDirection === 'asc' ? idA - idB : idB - idA;
                   } else if (sortBy === 'overall') {
-                    // Sort by overall z-score
-                    return sortDirection === 'asc' 
-                      ? a.maxOverallZScore - b.maxOverallZScore 
-                      : b.maxOverallZScore - a.maxOverallZScore;
+                    if (sortType === 'z-score') {
+                      // Sort by overall z-score
+                      return sortDirection === 'asc' 
+                        ? a.maxOverallZScore - b.maxOverallZScore 
+                        : b.maxOverallZScore - a.maxOverallZScore;
+                    } else { // vote-count
+                      // Sort by overall vote count
+                      return sortDirection === 'asc' 
+                        ? a.overallVoteCount - b.overallVoteCount 
+                        : b.overallVoteCount - a.overallVoteCount;
+                    }
                   } else if (sortBy.startsWith('groupZ-')) {
-                    // Sort by specific group z-score
                     const groupIndex = parseInt(sortBy.split('-')[1]);
-                    const aScore = a.groupZScores[groupIndex] || 0;
-                    const bScore = b.groupZScores[groupIndex] || 0;
-                    return sortDirection === 'asc' ? aScore - bScore : bScore - aScore;
+                    
+                    if (sortType === 'z-score') {
+                      // Sort by specific group z-score
+                      const aScore = a.groupZScores[groupIndex] || 0;
+                      const bScore = b.groupZScores[groupIndex] || 0;
+                      return sortDirection === 'asc' ? aScore - bScore : bScore - aScore;
+                    } else { // vote-count
+                      // Sort by specific group vote count
+                      const aVotes = a.groupVoteCounts[groupIndex] || 0;
+                      const bVotes = b.groupVoteCounts[groupIndex] || 0;
+                      return sortDirection === 'asc' ? aVotes - bVotes : bVotes - aVotes;
+                    }
                   }
                   return 0;
                 })
-                .map(({ comment, index }) => {
-                  // Original render code
+                .map(({ comment, index, isSignificant }) => {
+                  // Original render code with modifications
                   const zScoreData = polisStats?.zScores?.[index];
 
                   return (
                     <React.Fragment key={index}>
                       <tr
                         onClick={() => highlightComment(index)}
-                        className={highlightedComment === index ? 'highlighted-comment' : ''}>
+                        className={`${highlightedComment === index ? 'highlighted-comment' : ''} ${sortType === 'vote-count' && !isSignificant ? 'non-significant-comment' : ''}`}>
                         <td>{comment.id}</td>
                         <td>
                           {comment.text}
@@ -1249,7 +1346,7 @@ const SimulationContent = () => {
                         </td>
                         
                         <td className="group-z-scores-cell">
-                          {/* Overall Z-Scores - highlight if it's the selected group and reduce opacity if not */}
+                          {/* Overall Z-Scores - highlight if it's the selected group and reduce opacity for others */}
                           {zScoreData && (
                             <div 
                               className={`group-z-score-item ${zScoreData.isAgreeSignificant ? 'significant-agree' : ''} ${zScoreData.isDisagreeSignificant ? 'significant-disagree' : ''} ${selectedZScoreGroup === 'overall' ? 'selected-group' : 'non-selected-group'}`}
@@ -1285,6 +1382,27 @@ const SimulationContent = () => {
                           })}
                         </td>
                         
+                        {/* Add vote count column that shows the vote count for the selected group */}
+                        <td className="vote-count-cell">
+                          {selectedZScoreGroup === 'overall' ? (
+                            <div className="selected-group">
+                              {comment.agrees + comment.disagrees}
+                            </div>
+                          ) : (
+                            groupZScores && (() => {
+                              const groupIndex = parseInt(selectedZScoreGroup.split('-')[1]);
+                              const groupData = groupZScores[index]?.[groupIndex];
+                              if (!groupData) return <div>0</div>;
+                              
+                              return (
+                                <div className="selected-group">
+                                  {groupData.agrees + groupData.disagrees}
+                                </div>
+                              );
+                            })()
+                          )}
+                        </td>
+                        
                         <td>{comment.author_id}</td>
                       </tr>
                     </React.Fragment>
@@ -1295,10 +1413,10 @@ const SimulationContent = () => {
           <div className="table-footer">
             {polisStats && "Statistically significant at 90% confidence (z-score > 1.2816)"}
             <div>
-              <strong>Sorting:</strong> Click column headers to sort. 
-              {sortBy === 'id' && ` Currently sorting by ID ${sortDirection === 'asc' ? 'ascending' : 'descending'}.`}
-              {sortBy === 'overall' && ` Currently sorting by overall z-score ${sortDirection === 'asc' ? 'ascending' : 'descending'}.`}
-              {sortBy.startsWith('groupZ-') && ` Currently sorting by Group ${parseInt(sortBy.split('-')[1]) + 1} z-score ${sortDirection === 'asc' ? 'ascending' : 'descending'}.`}
+              <strong>Sorting:</strong> {sortType === 'z-score' ? 'Z-Scores' : 'Vote Counts'} for 
+              {selectedZScoreGroup === 'overall' ? ' Overall' : ` Group ${parseInt(selectedZScoreGroup.split('-')[1]) + 1}`} 
+              {sortDirection === 'asc' ? ' (ascending)' : ' (descending)'}
+              {sortType === 'vote-count' && ' - showing only statistically significant comments'}
             </div>
           </div>
         </div>
