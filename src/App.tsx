@@ -1249,10 +1249,10 @@ const SimulationContent = () => {
                         </td>
                         
                         <td className="group-z-scores-cell">
-                          {/* Overall Z-Scores - highlight if it's the selected group */}
+                          {/* Overall Z-Scores - highlight if it's the selected group and reduce opacity if not */}
                           {zScoreData && (
                             <div 
-                              className={`group-z-score-item ${zScoreData.isAgreeSignificant ? 'significant-agree' : ''} ${zScoreData.isDisagreeSignificant ? 'significant-disagree' : ''} ${selectedZScoreGroup === 'overall' ? 'selected-group' : ''}`}
+                              className={`group-z-score-item ${zScoreData.isAgreeSignificant ? 'significant-agree' : ''} ${zScoreData.isDisagreeSignificant ? 'significant-disagree' : ''} ${selectedZScoreGroup === 'overall' ? 'selected-group' : 'non-selected-group'}`}
                             >
                               <strong className={selectedZScoreGroup === 'overall' ? 'current-sort-group' : ''}>
                                 Overall:
@@ -1260,7 +1260,7 @@ const SimulationContent = () => {
                             </div>
                           )}
                           
-                          {/* Group-specific Z-Scores - highlight the selected group */}
+                          {/* Group-specific Z-Scores - highlight the selected group and reduce opacity for others */}
                           {groupZScores && groups && groups.length > 0 && groups.map((group, groupIndex) => {
                             const groupData = groupZScores[index]?.[groupIndex];
                             
@@ -1269,7 +1269,7 @@ const SimulationContent = () => {
                             // Add classes to highlight significant z-scores
                             const agreeClassName = groupData.isAgreeSignificant ? 'significant-agree' : '';
                             const disagreeClassName = groupData.isDisagreeSignificant ? 'significant-disagree' : '';
-                            const isSelectedGroup = selectedZScoreGroup === `groupZ-${groupIndex}` ? 'selected-group' : '';
+                            const isSelectedGroup = selectedZScoreGroup === `groupZ-${groupIndex}` ? 'selected-group' : 'non-selected-group';
                             const className = `group-z-score-item ${agreeClassName} ${disagreeClassName} ${isSelectedGroup}`.trim();
                             
                             return (

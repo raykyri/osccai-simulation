@@ -642,3 +642,25 @@
 .group-z-score-item.significant-disagree {
   color: #F44336;
 }
+
+.current-sort-group {
+  font-weight: 700;
+}
+
+.selected-group {
+  background-color: rgba(200, 230, 255, 0.3);
+  opacity: 1;
+}
+
+.non-selected-group {
+  opacity: 0.35;
+}
+
+/* Add hover effect for non-selected groups */
+.non-selected-group:hover {
+  opacity: 0.8;
+}
+
+.group-z-scores-cell {
+  min-width: 150px;
+}
