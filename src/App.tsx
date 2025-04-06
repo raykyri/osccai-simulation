@@ -210,15 +210,7 @@ const SimulationContent = () => {
   const performPCA = usePCA(voteMatrix);
   const identifyGroups = useGroupIdentification(pcaProjection, kMeansK);
 
-  const generateNewVoteMatrix = useCallback(() => {
-    const newVoteMatrix = generateRandomVoteMatrix();
-    setVoteMatrix(newVoteMatrix);
-    debug("New vote matrix generated:", newVoteMatrix);
-  }, [generateRandomVoteMatrix, setVoteMatrix]);
-
-  // Modified useEffect to load data on component mount
   useEffect(() => {
-    // Check if we've already initialized or if data is loading
     if (!initialized && !isLoading && !usingImportedData) {
       console.log('Loading default data on initialization');
       setInitialized(true);
@@ -226,12 +218,13 @@ const SimulationContent = () => {
     }
   }, [initialized, isLoading, usingImportedData, validateAndFetchData]);
 
-  // Separate useEffect for random data generation
   useEffect(() => {
     if (initialized && !isLoading && !usingImportedData) {
-      generateNewVoteMatrix();
+      const newVoteMatrix = generateRandomVoteMatrix();
+      setVoteMatrix(newVoteMatrix);
+      debug("New vote matrix generated:", newVoteMatrix);
     }
-  }, [initialized, isLoading, usingImportedData, generateNewVoteMatrix]);
+  }, [initialized, isLoading, usingImportedData]);
 
   useEffect(() => {
     if (voteMatrix && voteMatrix.length > 0) {
@@ -257,33 +250,23 @@ const SimulationContent = () => {
   }, [pcaProjection, identifyGroups, setGroups]);
 
   useEffect(() => {
-    // Skip calculations if no groups or no vote matrix
     if (!voteMatrix || voteMatrix.length === 0 || !commentTexts || commentTexts.length === 0) {
       return;
     }
 
     // Create an updated copy of commentTexts with pass counts
     const updatedCommentTexts = commentTexts.map((comment, index) => {
-      // Calculate passes for this comment
       let passes = 0;
-
       voteMatrix.forEach(participantVotes => {
         const vote = participantVotes[index];
         if (vote === 0) passes++;
       });
-
-      // Return a new object with the pass count added
-      return {
-        ...comment,
-        passes: passes
-      };
+      return { ...comment, passes };
     });
-
-    // Update comment texts with the calculated pass counts
     setCommentTexts(updatedCommentTexts);
+  }, [voteMatrix, commentTexts.length]);
 
-  }, [voteMatrix, commentTexts.length]); // Only recalculate when vote matrix changes or comment length changes
-
+  // overall consensus
   useEffect(() => {
     // Only calculate if we have vote data AND groups have been identified
     if (!voteMatrix || voteMatrix.length === 0 || !voteMatrix[0] || !groups || groups.length === 0) {
@@ -342,8 +325,9 @@ const SimulationContent = () => {
     topConsensus.reverse()
 
     setTopConsensusComments(topConsensus);
-  }, [voteMatrix, commentTexts, groups]); // Add groups to dependencies
+  }, [voteMatrix, commentTexts, groups]);
 
+  // group consensus
   useEffect(() => {
     // Skip calculations if no groups or no vote matrix
     if (!groups || groups.length === 0 ||
@@ -409,7 +393,7 @@ const SimulationContent = () => {
     setGroupConsensusData(newGroupConsensusData);
   }, [groups, voteMatrix, commentTexts]); // Dependencies for this effect
 
-  // Modify the Polis statistics useEffect
+  // comment z-scores
   useEffect(() => {
     // Only run if we have data to analyze AND groups have been identified
     if (!voteMatrix || voteMatrix.length === 0 ||
@@ -538,9 +522,8 @@ const SimulationContent = () => {
 
   }, [voteMatrix, commentTexts, groups]); // Add groups as a dependency
 
-  // New useEffect hook to run statistics calculations after polisStats is computed
+  // group z-scores, group repness scores
   useEffect(() => {
-    // Only run if polisStats has been calculated
     if (!polisStats || !groups || groups.length === 0) {
       return;
     }
@@ -548,25 +531,23 @@ const SimulationContent = () => {
     console.log('Calculating representative comments and group-specific z-scores');
 
     try {
-      // Prepare input data structure for stats calculations
       const commentStatsWithTid = [];
-      // Create an object to store group-specific z-scores for all comments
       const groupSpecificZScores = {};
 
       // For each comment, prepare stats per group
       commentTexts.forEach((comment, commentIndex) => {
         const commentStats = {};
-        // Create structure for this comment's group-specific z-scores
         groupSpecificZScores[commentIndex] = {};
 
-        // Calculate stats for each group
+        /**
+         * Group z-scores
+         */
         groups.forEach((group, groupIndex) => {
           let agrees = 0;
           let disagrees = 0;
           let passes = 0;
           let totalSeen = 0;
 
-          // Count votes from this group
           group.points.forEach(participantIndex => {
             const vote = voteMatrix[participantIndex][commentIndex];
             if (vote !== null) {
@@ -577,19 +558,13 @@ const SimulationContent = () => {
             }
           });
 
-          // Calculate base stats
           const agreementProb = (agrees + 1) / (totalSeen + 2);
           const disagreementProb = (disagrees + 1) / (totalSeen + 2);
-
-          // Calculate group-specific z-scores
           const agreementZScore = propTest(agrees, totalSeen);
           const disagreementZScore = propTest(disagrees, totalSeen);
-          
-          // Check significance
           const isAgreeSignificant = zSig90(agreementZScore);
           const isDisagreeSignificant = zSig90(disagreementZScore);
 
-          // Store group-specific z-scores
           groupSpecificZScores[commentIndex][groupIndex] = {
             agreementZScore,
             disagreementZScore,
@@ -600,8 +575,6 @@ const SimulationContent = () => {
             passes,
             totalSeen
           };
-
-          // Store basic stats for this comment and group (as before)
           commentStats[groupIndex] = {
             na: agrees,
             nd: disagrees,
@@ -612,46 +585,39 @@ const SimulationContent = () => {
             pdt: polisStats.zScores[commentIndex]?.disagreementZScore || 0
           };
         });
-
-        // Add comment with stats to the collection
         commentStatsWithTid.push([commentIndex, commentStats]);
       });
 
-      // Store the group-specific z-scores in state
       setGroupZScores(groupSpecificZScores);
 
-      // Process the stats to get comparative stats for each group
-      const commentStatsWithComparatives = commentStatsWithTid.map(([tid, groupStats]) => {
+      /**
+       * Group repness scores
+       */
+      // Get comparative stats for each group first, which are used for repness calculation
+      const commentStatsWithComparatives: Array<[number, Record<string, any>]> = commentStatsWithTid.map(([tid, groupStats]) => {
         const processedGroupStats = {};
 
-        // For each group, add comparative stats
         Object.entries(groupStats).forEach(([groupId, stats]) => {
-          // Get stats from all other groups
           const otherGroupStats = Object.entries(groupStats)
             .filter(([gid]) => gid !== groupId)
             .map(([_, stats]) => stats);
-
-          // Add comparative stats
           processedGroupStats[groupId] = addComparativeStats(stats, otherGroupStats);
         });
 
         return [tid, processedGroupStats];
       });
-
-      // Select representative comments for each group
       const representativeComments = selectRepComments(commentStatsWithComparatives);
 
-      // Store results in state
       setRepComments(representativeComments);
       console.log('Representative comments calculated:', representativeComments);
     } catch (error) {
       console.error('Error calculating representative comments:', error);
     }
 
-  }, [voteMatrix, commentTexts, groups, polisStats]); // Run when polisStats or groups change
+  }, [voteMatrix, commentTexts, groups, polisStats]);
 
+  // Format representative comments for display
   useEffect(() => {
-    // Only run when we have all the necessary data
     if (!repComments || !groups || !commentTexts || groups.length === 0) {
       setFormattedRepComments(null);
       return;
@@ -694,11 +660,13 @@ const SimulationContent = () => {
   const handleReset = () => {
     setUsingImportedData(false);
     resetState();
-    generateNewVoteMatrix()
-  };
 
+    const newVoteMatrix = generateRandomVoteMatrix();
+    setVoteMatrix(newVoteMatrix);
+    debug("New vote matrix generated:", newVoteMatrix);
+  };
   
-  // Modify the handle sort function to support the new sort type
+  // Sorts for the comment table
   const handleSortChange = (sortField) => {
     // If clicking on a z-score column, use the currently selected group for sorting
     if (sortField === 'overallZ') {
@@ -869,14 +837,13 @@ const SimulationContent = () => {
         </div>
       </div>
 
-      {/* <button onClick={handleReset}>Reset</button> */}
       <div className="data-source-indicator">
         {usingImportedData
           ? `Currently showing imported data from CSV file (${voteMatrix ? voteMatrix.length : 0} participants, ${commentTexts ? commentTexts.length : 0} comments)`
           : 'Currently showing randomly generated data'}
       </div>
 
-      {/* Comments Table - keep outside tabs */}
+      {/* Comments table */}
       {usingImportedData && commentTexts && commentTexts.length > 0 && (
         <div className="comments-table-container">
           <div className="table-controls">
