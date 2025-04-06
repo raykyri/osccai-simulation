@@ -169,8 +169,6 @@ const SimulationContent = () => {
 
   const [groupZScores, setGroupZScores] = useState(null);
 
-  const [expandedCommentIndex, setExpandedCommentIndex] = useState(null);
-
   const validateAndFetchData = useCallback(() => {
     setUrlError('');
 
@@ -1079,13 +1077,7 @@ const SimulationContent = () => {
                 <th>Agrees</th>
                 <th>Disagrees</th>
                 <th>Passes</th>
-                {polisStats && (
-                  <>
-                    <th>Agree Z-Score</th>
-                    <th>Disagree Z-Score</th>
-                    <th>Significance</th>
-                  </>
-                )}
+                <th>Z-Scores (Agree, Disagree)</th>
                 <th>Author</th>
               </tr>
             </thead>
@@ -1093,17 +1085,6 @@ const SimulationContent = () => {
               {commentTexts.map((comment, index) => {
                 // Get z-scores for this comment from polisStats
                 const zScoreData = polisStats?.zScores?.[index];
-
-                // Determine significance
-                const isSignificant = zScoreData ?
-                  (zScoreData.isAgreeSignificant ? 'Agree*' :
-                   zScoreData.isDisagreeSignificant ? 'Disagree*' : '-')
-                  : '-';
-
-                // Toggle expanded view for this comment
-                const toggleExpanded = () => {
-                  setExpandedCommentIndex(expandedCommentIndex === index ? null : index);
-                };
 
                 return (
                   <React.Fragment key={index}>
@@ -1113,17 +1094,6 @@ const SimulationContent = () => {
                       <td>{comment.id}</td>
                       <td>
                         {comment.text}
-                        {groupZScores && groups.length > 0 && (
-                          <button 
-                            className="toggle-group-scores-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleExpanded();
-                            }}
-                          >
-                            {expandedCommentIndex === index ? 'Hide Group Scores' : 'Show Group Scores'}
-                          </button>
-                        )}
                       </td>
                       <td className="vote-cell">
                         <div className="vote-count">{comment.agrees}</div>
@@ -1149,64 +1119,38 @@ const SimulationContent = () => {
                           </div>
                         )}
                       </td>
-                      {polisStats && (
-                        <>
-                          <td>{zScoreData ? zScoreData.agreementZScore.toFixed(2) : '-'}</td>
-                          <td>{zScoreData ? zScoreData.disagreementZScore.toFixed(2) : '-'}</td>
-                          <td>{isSignificant}</td>
-                        </>
-                      )}
+                      
+                      <td className="group-z-scores-cell">
+                        {/* Overall Z-Scores - only shown if data is available */}
+                        {zScoreData && (
+                          <div 
+                            className={`group-z-score-item ${zScoreData.isAgreeSignificant ? 'significant-agree' : ''} ${zScoreData.isDisagreeSignificant ? 'significant-disagree' : ''}`}
+                          >
+                            Overall: {zScoreData.agreementZScore.toFixed(2)}, {zScoreData.disagreementZScore.toFixed(2)}
+                          </div>
+                        )}
+                        
+                        {/* Group-specific Z-Scores - only shown if data is available */}
+                        {groupZScores && groups && groups.length > 0 && groups.map((group, groupIndex) => {
+                          const groupData = groupZScores[index]?.[groupIndex];
+                          
+                          if (!groupData) return null;
+                          
+                          // Add classes to highlight significant z-scores
+                          const agreeClassName = groupData.isAgreeSignificant ? 'significant-agree' : '';
+                          const disagreeClassName = groupData.isDisagreeSignificant ? 'significant-disagree' : '';
+                          const className = `group-z-score-item ${agreeClassName} ${disagreeClassName}`.trim();
+                          
+                          return (
+                            <div key={groupIndex} className={className}>
+                              Group {groupIndex + 1}: {groupData.agreementZScore.toFixed(2)}, {groupData.disagreementZScore.toFixed(2)}
+                            </div>
+                          );
+                        })}
+                      </td>
+                      
                       <td>{comment.author_id}</td>
                     </tr>
-                    
-                    {/* Group-specific z-scores expanded view */}
-                    {expandedCommentIndex === index && groupZScores && (
-                      <tr className="group-scores-row">
-                        <td colSpan={polisStats ? 9 : 6}>
-                          <div className="group-scores-container">
-                            <h4>Group-Specific Z-Scores for Comment #{comment.id}</h4>
-                            <table className="group-scores-table">
-                              <thead>
-                                <tr>
-                                  <th>Group</th>
-                                  <th>Agrees</th>
-                                  <th>Disagrees</th>
-                                  <th>Passes</th>
-                                  <th>Total Votes</th>
-                                  <th>Agree Z-Score</th>
-                                  <th>Disagree Z-Score</th>
-                                  <th>Significance</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {groups.map((group, groupIndex) => {
-                                  const groupData = groupZScores[index]?.[groupIndex];
-                                  
-                                  if (!groupData) return null;
-                                  
-                                  const groupSignificant = 
-                                    groupData.isAgreeSignificant ? 'Agree*' :
-                                    groupData.isDisagreeSignificant ? 'Disagree*' : '-';
-                                    
-                                  return (
-                                    <tr key={groupIndex}>
-                                      <td>Group {groupIndex + 1}</td>
-                                      <td>{groupData.agrees}</td>
-                                      <td>{groupData.disagrees}</td>
-                                      <td>{groupData.passes}</td>
-                                      <td>{groupData.totalSeen}</td>
-                                      <td>{groupData.agreementZScore.toFixed(2)}</td>
-                                      <td>{groupData.disagreementZScore.toFixed(2)}</td>
-                                      <td>{groupSignificant}</td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
                   </React.Fragment>
                 );
               })}

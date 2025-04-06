@@ -617,3 +617,28 @@
     width: 100%;
   }
 }
+
+/* Add to your App.css file */
+.group-z-scores-cell {
+  font-size: 12px;
+  max-width: 200px;
+}
+
+.group-z-score-item {
+  margin-bottom: 3px;
+  white-space: nowrap;
+}
+
+/* Make the z-score values easier to read */
+.group-z-score-item:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+/* Optional: highlight significant values */
+.group-z-score-item.significant-agree {
+  color: #4CAF50;
+}
+
+.group-z-score-item.significant-disagree {
+  color: #F44336;
+}
