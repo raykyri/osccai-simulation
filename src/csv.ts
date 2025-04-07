@@ -1,4 +1,4 @@
-import Papa from 'papaparse';
+import Papa from "papaparse"
 
 export const parseVoteMatrixCSV = (csvString) => {
   // Use Papa Parse to parse the CSV properly
