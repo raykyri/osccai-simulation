@@ -57,7 +57,6 @@ function beatsBestByTest(
 // Check if comment is a better representative of agreement
 function beatsBestAgr(commentStats: any, currentBest: any): boolean {
   const { na, nd, ra, rat, pa, pat, ns } = commentStats
-
   // Don't accept comments with no votes
   if (na === 0 && nd === 0) return false
 
@@ -173,16 +172,10 @@ export function selectRepComments(
 
   // Process each comment
   commentStatsWithTid.forEach(([tid, groupsData]) => {
-    // Skip this comment if it's moderated out
-    if (
-      commentTexts &&
-      commentTexts[tid] &&
-      commentTexts[tid].moderated === "-1"
-    ) {
-      return // Skip processing this comment
+    if (commentTexts?.[tid]?.moderated === "-1") {
+      return
     }
 
-    // For each group
     Object.entries(groupsData).forEach(([gid, commentStats]) => {
       const groupResult = result[gid]
 
@@ -192,7 +185,7 @@ export function selectRepComments(
         groupResult.sufficient.push(finalizedStats)
       }
 
-      // Always track the best comment
+      // Track the best comment
       if (
         beatsBestByTest(commentStats, groupResult.best?.repness_test || null)
       ) {
@@ -206,7 +199,6 @@ export function selectRepComments(
     })
   })
 
-  // Transform the result structure
   const finalResult: Record<string, FinalizedCommentStats[]> = {}
 
   Object.entries(result).forEach(([gid, { best, best_agree, sufficient }]) => {

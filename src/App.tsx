@@ -720,8 +720,7 @@ const SimulationContent = () => {
           commentTexts[comment.tid]?.text || `Comment ${comment.tid + 1}`
         const commentId =
           commentTexts[comment.tid]?.id || comment.tid.toString()
-        const repType =
-          comment.repful_for === "agree" ? "Agreement" : "Disagreement"
+        const repType = comment.repful_for === "agree" ? "Agree" : "Disagree"
         const repnessScore = comment.repness.toFixed(2)
         const supportPercent = Math.round(
           (comment.n_success / comment.n_trials) * 100,
@@ -736,6 +735,8 @@ const SimulationContent = () => {
           supportPercent,
         }
       })
+
+      formattedComments.sort((a, b) => b.repnessScore - a.repnessScore)
 
       return {
         groupIndex,
@@ -1542,44 +1543,47 @@ const SimulationContent = () => {
                             </td>
                             <td className={`rep-type ${comment.repful_for}`}>
                               {comment.repType}
-                              {comment.best_agree && (
-                                <span className="best-agree-tag">
-                                  {" "}
-                                  (Best agree)
-                                </span>
-                              )}
                             </td>
                             <td className="rep-stats">
                               <div>
                                 Repness: <strong>{comment.repnessScore}</strong>
                               </div>
                               <div>
-                                Z-score: <strong>{comment.p_test.toFixed(2)}</strong>
+                                Z-score:{" "}
+                                <strong>{comment.p_test.toFixed(2)}</strong>
                               </div>
                               <div>
                                 {comment.repful_for === "agree" ? (
                                   <span>
-                                    {comment.supportPercent}% agree ({comment.n_success} of{" "}
-                                    {comment.n_trials})
+                                    {comment.supportPercent}% agree (
+                                    {comment.n_success} of {comment.n_trials})
                                   </span>
                                 ) : (
                                   <span>
-                                    {comment.supportPercent}% disagree ({comment.n_success} of{" "}
-                                    {comment.n_trials})
+                                    {comment.supportPercent}% disagree (
+                                    {comment.n_success} of {comment.n_trials})
                                   </span>
                                 )}
                               </div>
                               <div className="additional-metrics">
-                                <span className="metric-label">p_test (proportion):</span>{" "}
+                                <span className="metric-label">
+                                  p_test (proportion):
+                                </span>{" "}
                                 <strong>{comment.p_test.toFixed(2)}</strong>
                               </div>
                               <div className="additional-metrics">
-                                <span className="metric-label">repness_test (diff):</span>{" "}
-                                <strong>{comment.repness_test.toFixed(2)}</strong>
+                                <span className="metric-label">
+                                  repness_test (diff):
+                                </span>{" "}
+                                <strong>
+                                  {comment.repness_test.toFixed(2)}
+                                </strong>
                               </div>
                               <div className="additional-metrics">
                                 <span className="metric-label">p_success:</span>{" "}
-                                <strong>{(comment.p_success * 100).toFixed(0)}%</strong>
+                                <strong>
+                                  {(comment.p_success * 100).toFixed(0)}%
+                                </strong>
                               </div>
                             </td>
                           </tr>
