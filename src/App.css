@@ -854,3 +854,24 @@
 .participants-table td:first-child {
   font-family: monospace;
 }
+
+/* Add this at the end of your CSS file */
+.additional-metrics {
+  font-size: 0.85em;
+  color: #555;
+  margin-top: 3px;
+}
+
+.metric-label {
+  color: #777;
+}
+
+/* Adjust the existing rep-stats styling to handle more content */
+.rep-stats {
+  font-size: 0.85em;
+  padding-right: 5px;
+}
+
+.rep-stats div {
+  margin-bottom: 4px;
+}

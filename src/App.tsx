@@ -1554,21 +1554,32 @@ const SimulationContent = () => {
                                 Repness: <strong>{comment.repnessScore}</strong>
                               </div>
                               <div>
-                                Z-score:{" "}
-                                <strong>{comment.p_test.toFixed(2)}</strong>
+                                Z-score: <strong>{comment.p_test.toFixed(2)}</strong>
                               </div>
                               <div>
                                 {comment.repful_for === "agree" ? (
                                   <span>
-                                    {comment.supportPercent}% agree (
-                                    {comment.n_success} of {comment.n_trials})
+                                    {comment.supportPercent}% agree ({comment.n_success} of{" "}
+                                    {comment.n_trials})
                                   </span>
                                 ) : (
                                   <span>
-                                    {comment.supportPercent}% disagree (
-                                    {comment.n_success} of {comment.n_trials})
+                                    {comment.supportPercent}% disagree ({comment.n_success} of{" "}
+                                    {comment.n_trials})
                                   </span>
                                 )}
+                              </div>
+                              <div className="additional-metrics">
+                                <span className="metric-label">p_test (proportion):</span>{" "}
+                                <strong>{comment.p_test.toFixed(2)}</strong>
+                              </div>
+                              <div className="additional-metrics">
+                                <span className="metric-label">repness_test (diff):</span>{" "}
+                                <strong>{comment.repness_test.toFixed(2)}</strong>
+                              </div>
+                              <div className="additional-metrics">
+                                <span className="metric-label">p_success:</span>{" "}
+                                <strong>{(comment.p_success * 100).toFixed(0)}%</strong>
                               </div>
                             </td>
                           </tr>
