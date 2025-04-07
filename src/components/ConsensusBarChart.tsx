@@ -122,9 +122,10 @@ export const ConsensusBarChart = ({ groups, comments, commentTexts, voteMatrix, 
                   </div>
                   <div className="consensus-stats">
                     <div className="vote-breakdown">
-                      <span className="agree-count">{agrees} agree ({Math.round(agreeVotePercent)}%)</span>
-                      <span className="disagree-count">{disagrees} disagree ({Math.round(disagreeVotePercent)}%)</span>
-                      <span className="pass-count">{passes} pass ({Math.round(passVotePercent)}%)</span>
+                      <span className="agree-count" title={agrees.toString()}>{Math.round(agreeVotePercent)}%</span>
+                      <span className="disagree-count" title={disagrees.toString()}>{Math.round(disagreeVotePercent)}%</span>
+                      <span className="pass-count" title={passes.toString()}>{Math.round(passVotePercent)}%</span>
+                      <span className="total-count">({agrees + disagrees + passes})</span>
                     </div>
                   </div>
                 </td>
@@ -150,12 +151,12 @@ export const ConsensusBarChart = ({ groups, comments, commentTexts, voteMatrix, 
                   const groupTotalVotes = groupAgrees + groupDisagrees + groupPasses;
                   
                   // Calculate percentages for this group
-                  const groupAgreePercent = (groupAgrees / groupTotal) * 100;
-                  const groupDisagreePercent = (groupDisagrees / groupTotal) * 100;
-                  const groupPassPercent = (groupPasses / groupTotal) * 100;
-                  const groupNoVotePercent = (groupNoVotes / groupTotal) * 100;
+                  const groupAgreePercent = (groupAgrees / totalParticipants) * 100;
+                  const groupDisagreePercent = (groupDisagrees / totalParticipants) * 100;
+                  const groupPassPercent = (groupPasses / totalParticipants) * 100;
+                  const groupNoVotePercent = (groupNoVotes / totalParticipants) * 100;
                   
-                  // Calculate vote percentages out of those who voted in this group
+                  // Keep vote percentages out of those who voted in this group (for text display)
                   const groupAgreeVotePercent = groupTotalVotes > 0 ? (groupAgrees / groupTotalVotes) * 100 : 0;
                   const groupDisagreeVotePercent = groupTotalVotes > 0 ? (groupDisagrees / groupTotalVotes) * 100 : 0;
                   const groupPassVotePercent = groupTotalVotes > 0 ? (groupPasses / groupTotalVotes) * 100 : 0;
@@ -190,15 +191,16 @@ export const ConsensusBarChart = ({ groups, comments, commentTexts, voteMatrix, 
                             style={{
                               width: `${groupNoVotePercent}%`,
                             }}
-                            title={`${Math.round(groupNoVotePercent)}% of Group ${groupIndex + 1} didn't vote (${groupNoVotes} participants)`}
+                            title={`${Math.round(groupNoVotePercent)}% of Group ${groupIndex + 1} didn't see the question (${groupNoVotes} participants)`}
                           />
                         </div>
                       </div>
                       <div className="consensus-stats">
                         <div className="vote-breakdown">
-                          <span className="agree-count">{groupAgrees} ({Math.round(groupAgreeVotePercent)}%)</span>
-                          <span className="disagree-count">{groupDisagrees} ({Math.round(groupDisagreeVotePercent)}%)</span>
-                          <span className="pass-count">{groupPasses} ({Math.round(groupPassVotePercent)}%)</span>
+                          <span className="agree-count" title={groupAgrees.toString()}>{Math.round(groupAgreeVotePercent)}%</span>
+                          <span className="disagree-count" title={groupDisagrees.toString()}>{Math.round(groupDisagreeVotePercent)}%</span>
+                          <span className="pass-count" title={groupPasses.toString()}>{Math.round(groupPassVotePercent)}%</span>
+                          <span className="total-count">({groupAgrees + groupDisagrees + groupPasses})</span>
                         </div>
                       </div>
                     </td>

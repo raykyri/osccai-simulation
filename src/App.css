@@ -369,10 +369,10 @@
 .consensus-bar-wrapper {
   flex-grow: 1;
   background-color: #eee;
-  border-radius: 4px;
   overflow: hidden;
   margin-top: 10px;
   margin-bottom: 8px;
+  border: 0.75px solid #ddd;
 }
 
 .consensus-bar {
@@ -396,7 +396,6 @@
 
 .consensus-stats {
   width: 150px;
-  padding-left: 10px;
   display: flex;
   flex-direction: column;
   font-size: 0.9em;
@@ -482,9 +481,8 @@
 /* Add these extracted styles to App.css */
 .consensus-bar-multi {
   display: flex;
-  height: 20px;
+  height: 16px;
   width: 100%;
-  border-radius: 4px;
   overflow: hidden;
 }
 
@@ -499,21 +497,21 @@
 }
 
 .pass-bar {
-  background-color: #999999; /* Gray */
+  background-color: #bbb; /* Gray */
   height: 100%;
 }
 
 .no-vote-bar {
-  background-color: #E0E0E0; /* Light gray */
+  background-color: #eee; /* Light gray */
   height: 100%;
 }
 
 .vote-breakdown {
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
+  justify-content: left;
+  font-size: 13px;
   margin-top: 2px;
-  gap: 10px;
+  gap: 6px;
 }
 
 .agree-count {
@@ -526,6 +524,10 @@
 
 .pass-count {
   color: #9E9E9E;
+}
+
+.total-count {
+  color: #777;
 }
 
 .data-source-indicator {
