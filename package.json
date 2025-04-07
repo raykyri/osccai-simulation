@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@ipld/dag-cbor": "^9.2.2",
+    "@noble/hashes": "^1.7.1",
     "@testing-library/user-event": "^13.5.0",
     "@tippyjs/react": "^4.2.6",
     "cors": "^2.8.5",

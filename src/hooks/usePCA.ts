@@ -21,11 +21,14 @@ const usePCA = (voteMatrix) => {
       debug("Vote matrix in usePCA:", matrixToUse)
 
       try {
+        console.log(
+          `Running PCA on ${matrixToUse.length} participants, ${matrixToUse[0].length} comments`,
+        )
         // const projection = sparsityAwareProjectPtpts(
         //   matrixToUse,
         //   runPCA(matrixToUse as Matrix),
         // )
-        const projection = legacyPCA(matrixToUse)
+        const projection = simplePCA(matrixToUse)
 
         // Format the result as before
         const result = projection.map((coords, i) => {

@@ -1,3 +1,7 @@
+import { bytesToHex } from "@noble/hashes/utils"
+import { sha256 } from "@noble/hashes/sha256"
+import * as cbor from "@ipld/dag-cbor"
+
 import { kmeans } from 'ml-kmeans';
 import { debug } from './debug.js';
 
@@ -9,7 +13,7 @@ function kMeansClustering(data, k) {
   }
   debug("Valid input data for kMeansClustering", data);
 
-  const result = kmeans(data, k);
+  const result = kmeans(data, k, { seed: 0 });
 
   // Create an array to store the points for each cluster
   const clusters = Array(k).fill().map(() => []);
