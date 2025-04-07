@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { pca } from '../utils/pca.ts';
+import { pca as legacyPCA } from '../utils/pca.ts';
+import { runPCA, sparsityAwareProjectPtpts, type Matrix } from '../pca.ts';
 import { debug } from '../utils/debug.ts';
 
 const usePCA = (voteMatrix) => {
@@ -15,9 +16,10 @@ const usePCA = (voteMatrix) => {
     debug('Vote matrix in usePCA:', matrixToUse);
     
     try {
-      const projection = pca(matrixToUse);
-      debug('PCA projection:', projection);
+      const projection = sparsityAwareProjectPtpts(matrixToUse, runPCA(matrixToUse as Matrix));
+      // const projection = legacyPCA(matrixToUse);
       
+      // Format the result as before
       const result = projection.map((coords, i) => {
         if (isNaN(coords[0]) || isNaN(coords[1])) {
           debug(`NaN values in PCA projection at index ${i}:`, coords);
@@ -26,10 +28,10 @@ const usePCA = (voteMatrix) => {
         return { x: coords[0], y: coords[1], id: i };
       });
       
-      debug('Processed PCA result:', result);
+      console.log('Processed PCA result:', result);
       return result;
     } catch (error) {
-      debug('Error in PCA calculation:', error);
+      console.log('Error in PCA calculation:', error);
       return [];
     }
   }, [voteMatrix]);
