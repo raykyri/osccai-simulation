@@ -159,8 +159,6 @@ const SimulationContent = () => {
       }),
     ])
       .then(async ([votesData, commentsData, votesLogData]) => {
-        console.log("Data fetched successfully")
-
         // Parse CSV to JSON with our custom parsers
         const { metadata, data: originalVoteData } =
           parseVoteMatrixCSV(votesData)
@@ -206,8 +204,17 @@ const SimulationContent = () => {
 
         // Set the updated vote matrix with nulls for unvoted items
         setVoteMatrix(updatedVoteMatrix)
-        setCommentTexts(commentData)
         setVotesLogData(votesLogData)
+        setCommentTexts(
+          commentData.map((comment, index) => {
+            let passes = 0
+            voteMatrix.forEach((participantVotes) => {
+              const vote = participantVotes[index]
+              if (vote === 0) passes++
+            })
+            return { ...comment, passes }
+          }),
+        )
 
         // Mark that we're using imported data
         setUsingImportedData(true)
@@ -238,16 +245,21 @@ const SimulationContent = () => {
   const performPCA = usePCA(voteMatrix)
   const identifyGroups = useGroupIdentification(pcaProjection, kMeansK)
 
+  // load default data on initialization
   useEffect(() => {
     if (!initialized && !isLoading && !usingImportedData) {
-      console.log("Loading default data on initialization")
       setInitialized(true)
       validateAndFetchData()
     }
   }, [initialized, isLoading, usingImportedData, validateAndFetchData])
 
   useEffect(() => {
-    if (initialized && !isLoading && !usingImportedData && activeTab === "random") {
+    if (
+      initialized &&
+      !isLoading &&
+      !usingImportedData &&
+      activeTab === "random"
+    ) {
       const newVoteMatrix = generateRandomVoteMatrix()
       setVoteMatrix(newVoteMatrix)
       debug("New vote matrix generated:", newVoteMatrix)
@@ -304,7 +316,7 @@ const SimulationContent = () => {
 
   // Add a new effect to automatically set k to the best value when best k is determined
   useEffect(() => {
-    if (bestK !== null && bestK > 0) {
+    if (bestK !== null && bestK > 0 && voteMatrix && voteMatrix.length !== 0) {
       console.log(`Setting k-means k to best value: ${bestK}`)
       updateKMeansK(bestK)
     }
@@ -316,28 +328,6 @@ const SimulationContent = () => {
       setGroups(newGroups)
     }
   }, [pcaProjection, identifyGroups, setGroups])
-
-  useEffect(() => {
-    if (
-      !voteMatrix ||
-      voteMatrix.length === 0 ||
-      !commentTexts ||
-      commentTexts.length === 0
-    ) {
-      return
-    }
-
-    // Create an updated copy of commentTexts with pass counts
-    const updatedCommentTexts = commentTexts.map((comment, index) => {
-      let passes = 0
-      voteMatrix.forEach((participantVotes) => {
-        const vote = participantVotes[index]
-        if (vote === 0) passes++
-      })
-      return { ...comment, passes }
-    })
-    setCommentTexts(updatedCommentTexts)
-  }, [voteMatrix, commentTexts.length])
 
   // overall consensus
   useEffect(() => {
@@ -613,7 +603,7 @@ const SimulationContent = () => {
 
     setPolisStats(statsData)
     console.log("Polis stats calculated:", statsData)
-  }, [voteMatrix, commentTexts, groups]) // Add groups as a dependency
+  }, [voteMatrix, commentTexts, groups])
 
   // group z-scores, group repness scores
   useEffect(() => {
