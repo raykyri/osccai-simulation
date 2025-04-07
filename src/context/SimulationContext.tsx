@@ -39,50 +39,50 @@ export const SimulationProvider = ({ children }) => {
     const [silhouetteCoefficients, setSilhouetteCoefficients] = useState([]);
     const [bestK, setBestK] = useState(DEFAULT_KMEANS_K);
 
-    // Load state from localStorage on initial render
-    useEffect(() => {
-        const savedState = localStorage.getItem('osccaiSimulationState');
-        if (savedState) {
-            const parsedState = JSON.parse(savedState);
-            setParticipants(parsedState.participants);
-            setComments(parsedState.comments);
-            setAgreePercentage(parsedState.agreePercentage);
-            setDisagreePercentage(parsedState.disagreePercentage);
-            setRangeValues(parsedState.rangeValues);
-            setConsensusGroups(parsedState.consensusGroups);
-            setGroupSizes(parsedState.groupSizes);
-            setGroupSimilarity(parsedState.groupSimilarity);
-            setVoteMatrix(parsedState.voteMatrix);
-            setPcaProjection(parsedState.pcaProjection);
-            setGroups(parsedState.groups);
-            setSelectedGroup(parsedState.selectedGroup);
-            setConsensusScores(parsedState.consensusScores);
-            setConsensusThreshold(parsedState.consensusThreshold);
-            setHighlightedComment(parsedState.highlightedComment);
-        }
-    }, []);
+    // // Load state from localStorage on initial render
+    // useEffect(() => {
+    //     const savedState = localStorage.getItem('osccaiSimulationState');
+    //     if (savedState) {
+    //         const parsedState = JSON.parse(savedState);
+    //         setParticipants(parsedState.participants);
+    //         setComments(parsedState.comments);
+    //         setAgreePercentage(parsedState.agreePercentage);
+    //         setDisagreePercentage(parsedState.disagreePercentage);
+    //         setRangeValues(parsedState.rangeValues);
+    //         setConsensusGroups(parsedState.consensusGroups);
+    //         setGroupSizes(parsedState.groupSizes);
+    //         setGroupSimilarity(parsedState.groupSimilarity);
+    //         setVoteMatrix(parsedState.voteMatrix);
+    //         setPcaProjection(parsedState.pcaProjection);
+    //         setGroups(parsedState.groups);
+    //         setSelectedGroup(parsedState.selectedGroup);
+    //         setConsensusScores(parsedState.consensusScores);
+    //         setConsensusThreshold(parsedState.consensusThreshold);
+    //         setHighlightedComment(parsedState.highlightedComment);
+    //     }
+    // }, []);
 
-    // Save state to localStorage whenever it changes
-    useEffect(() => {
-        const stateToSave = {
-            participants,
-            comments,
-            agreePercentage,
-            disagreePercentage,
-            rangeValues,
-            consensusGroups,
-            groupSizes,
-            groupSimilarity,
-            voteMatrix,
-            pcaProjection,
-            groups,
-            selectedGroup,
-            consensusScores,
-            consensusThreshold,
-            highlightedComment,
-        };
-        localStorage.setItem('osccaiSimulationState', JSON.stringify(stateToSave));
-    }, [participants, comments, agreePercentage, disagreePercentage, rangeValues, consensusGroups, groupSizes, groupSimilarity, voteMatrix, pcaProjection, groups, selectedGroup, consensusScores, consensusThreshold, highlightedComment]);
+    // // Save state to localStorage whenever it changes
+    // useEffect(() => {
+    //     const stateToSave = {
+    //         participants,
+    //         comments,
+    //         agreePercentage,
+    //         disagreePercentage,
+    //         rangeValues,
+    //         consensusGroups,
+    //         groupSizes,
+    //         groupSimilarity,
+    //         voteMatrix,
+    //         pcaProjection,
+    //         groups,
+    //         selectedGroup,
+    //         consensusScores,
+    //         consensusThreshold,
+    //         highlightedComment,
+    //     };
+    //     localStorage.setItem('osccaiSimulationState', JSON.stringify(stateToSave));
+    // }, [participants, comments, agreePercentage, disagreePercentage, rangeValues, consensusGroups, groupSizes, groupSimilarity, voteMatrix, pcaProjection, groups, selectedGroup, consensusScores, consensusThreshold, highlightedComment]);
 
     const [tempParticipants, setTempParticipants] = useState(participants);
     const [tempComments, setTempComments] = useState(comments);
