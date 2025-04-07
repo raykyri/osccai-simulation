@@ -247,7 +247,7 @@ const SimulationContent = () => {
   }, [initialized, isLoading, usingImportedData, validateAndFetchData])
 
   useEffect(() => {
-    if (initialized && !isLoading && !usingImportedData) {
+    if (initialized && !isLoading && !usingImportedData && activeTab === "random") {
       const newVoteMatrix = generateRandomVoteMatrix()
       setVoteMatrix(newVoteMatrix)
       debug("New vote matrix generated:", newVoteMatrix)
