@@ -27,8 +27,6 @@ const usePCA = (voteMatrix) => {
         }
         return { x: coords[0], y: coords[1], id: i };
       });
-      
-      console.log('Processed PCA result:', result);
       return result;
     } catch (error) {
       console.log('Error in PCA calculation:', error);

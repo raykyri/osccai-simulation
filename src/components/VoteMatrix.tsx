@@ -54,6 +54,7 @@ const VoteMatrix = ({ voteMatrix, handleVoteChange, selectedGroup, groups, highl
                   {voteMatrix[0].map((_, j) => (
                       <div
                         className={`column-label ${highlightedComment === j ? 'highlighted' : ''}`}
+                        key={j}
                       >
                         <Tippy 
                           key={j}

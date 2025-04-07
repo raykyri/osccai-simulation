@@ -970,41 +970,44 @@ const SimulationContent = () => {
       </div>
 
       {/* Participants table */}
-      {usingImportedData && participantsMetadata && participantsMetadata.length > 0 && (
-        <div className="participants-table-container">
-          <h2>Participants</h2>
-          <div className="table-container">
-            <table className="participants-table">
-              <thead>
-                <tr>
-                  <th>Participant ID</th>
-                  <th>Total Votes</th>
-                  <th>Agrees</th>
-                  <th>Disagrees</th>
-                  <th>Group ID (CSV)</th>
-                  <th>Group</th>
-                </tr>
-              </thead>
-              <tbody>
-                {participantsMetadata.map((participant, index) => (
-                  <tr key={index}>
-                    <td>{participant.participant}</td>
-                    <td>{participant["n-votes"]}</td>
-                    <td>{participant["n-agree"]}</td>
-                    <td>{participant["n-disagree"]}</td>
-                    <td>{participant["group-id"] || "N/A"}</td>
-                    <td>
-                      {groups && groups.length > 0 
-                        ? (groups.findIndex(g => g.points.includes(index)) + 1) || "N/A"
-                        : "N/A"}
-                    </td>
+      {usingImportedData &&
+        participantsMetadata &&
+        participantsMetadata.length > 0 && (
+          <div className="participants-table-container">
+            <h2>Participants</h2>
+            <div className="table-container">
+              <table className="participants-table">
+                <thead>
+                  <tr>
+                    <th>Participant ID</th>
+                    <th>Total Votes</th>
+                    <th>Agrees</th>
+                    <th>Disagrees</th>
+                    <th>Group ID (CSV)</th>
+                    <th>Group</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {participantsMetadata.map((participant, index) => (
+                    <tr key={index}>
+                      <td>{participant.participant}</td>
+                      <td>{participant["n-votes"]}</td>
+                      <td>{participant["n-agree"]}</td>
+                      <td>{participant["n-disagree"]}</td>
+                      <td>{participant["group-id"] || "N/A"}</td>
+                      <td>
+                        {groups && groups.length > 0
+                          ? groups.findIndex((g) => g.points.includes(index)) +
+                              1 || "N/A"
+                          : "N/A"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Comments table */}
       {usingImportedData && commentTexts && commentTexts.length > 0 && (
@@ -1065,7 +1068,8 @@ const SimulationContent = () => {
                     onClick={() => handleSortChange("id")}
                     className="sortable-header"
                   >
-                    ID {sortBy === "id" && (sortDirection === "asc" ? "▲" : "▼")}
+                    ID{" "}
+                    {sortBy === "id" && (sortDirection === "asc" ? "▲" : "▼")}
                   </th>
                   <th>Comment Text</th>
                   <th>Agrees</th>
@@ -1211,7 +1215,9 @@ const SimulationContent = () => {
                             )}
                           </td>
                           <td className="vote-cell">
-                            <div className="vote-count">{comment.disagrees}</div>
+                            <div className="vote-count">
+                              {comment.disagrees}
+                            </div>
                             {(comment.agrees ||
                               comment.disagrees ||
                               comment.passes) > 0 && (
@@ -1453,8 +1459,9 @@ const SimulationContent = () => {
                   : []
 
               // Sort comments by repness score (highest first)
-              const sortedComments = [...groupRepComments].sort((a, b) => 
-                (b.repness * b.repness_test) - (a.repness * a.repness_test)
+              const sortedComments = [...groupRepComments].sort(
+                (a, b) =>
+                  b.repness * b.repness_test - a.repness * a.repness_test,
               )
 
               // Format comments for the ConsensusBarChart component
@@ -1603,11 +1610,7 @@ const SimulationContent = () => {
             target="_blank"
             rel="noreferrer noopener"
           >
-            OSCCAI simulation
-          </a>{" "}
-          by{" "}
-          <a href="https://cip.org" target="_blank" rel="noreferrer noopener">
-            CIP
+            OSCCAI
           </a>
           .
         </p>
