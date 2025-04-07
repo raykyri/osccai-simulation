@@ -1362,10 +1362,146 @@ const SimulationContent = () => {
         </div>
       )}
 
+      <VoteMatrix
+        voteMatrix={voteMatrix}
+        handleVoteChange={handleVoteChange}
+        selectedGroup={selectedGroup}
+        groups={groups}
+        highlightedComment={highlightedComment}
+        commentTexts={commentTexts}
+      />
+      <div className="side-by-side-container">
+        <PCAProjection
+          pcaProjection={pcaProjection}
+          groups={groups}
+          selectedGroup={selectedGroup}
+        />
+        <GroupAnalysis
+          groups={groups}
+          setSelectedGroup={setSelectedGroup}
+          // voteMatrix={voteMatrix}
+          // consensusScores={consensusScores}
+          // consensusThreshold={consensusThreshold}
+          // setConsensusThreshold={setConsensusThreshold}
+          // highlightComment={highlightComment}
+          selectedGroup={selectedGroup}
+          // kMeansK={kMeansK}
+          // updateKMeansK={updateKMeansK} // Changed from handleKMeansKChange
+          // silhouetteCoefficients={silhouetteCoefficients}
+          // bestK={bestK}
+        />
+      </div>
+
+      {/* Top comments overall - Combined and sorted by max absolute z-score */}
+      <div className="top-overall">
+        <h2>Overall Statistical Consensus</h2>
+
+        {polisStats ? (
+          <div className="stats-consensus-section">
+            {polisStats.consensusComments.agree.length > 0 ||
+            polisStats.consensusComments.disagree.length > 0 ? (
+              <div className="consensus-chart-container">
+                <ConsensusBarChart
+                  groups={groups}
+                  comments={[
+                    ...polisStats.consensusComments.agree.map((comment) => ({
+                      ...comment,
+                      type: "agree",
+                    })),
+                    ...polisStats.consensusComments.disagree.map((comment) => ({
+                      ...comment,
+                      type: "disagree",
+                    })),
+                  ]}
+                  commentTexts={commentTexts}
+                  voteMatrix={voteMatrix}
+                  sortByZScore={true}
+                />
+              </div>
+            ) : (
+              <div>No statistically significant comments found</div>
+            )}
+          </div>
+        ) : (
+          <div className="consensus-chart-container">
+            <ConsensusBarChart
+              groups={groups}
+              comments={topConsensusComments}
+              commentTexts={commentTexts}
+              voteMatrix={voteMatrix}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="top-by-groups">
+        <h2>Group Representative Comments, By Volume</h2>
+        <p>
+          Showing representative comments for each group based on statistical
+          analysis.
+        </p>
+
+        {groups.length === 0 ? (
+          <div>No groups identified yet</div>
+        ) : (
+          <div>
+            {groups.map((group, groupIndex) => {
+              // Get the representative comments for this group
+              const groupRepComments =
+                repComments && repComments[groupIndex]
+                  ? repComments[groupIndex]
+                  : []
+
+              // Sort comments by repness score (highest first)
+              const sortedComments = [...groupRepComments].sort((a, b) => 
+                (b.repness * b.repness_test) - (a.repness * a.repness_test)
+              )
+
+              // Format comments for the ConsensusBarChart component
+              const formattedComments = sortedComments.map((comment) => ({
+                commentIndex: comment.tid,
+                text:
+                  commentTexts?.[comment.tid]?.text ||
+                  `Comment ${comment.tid + 1}`,
+                numAgrees: comment.n_success,
+                numDisagrees:
+                  comment.repful_for === "agree" ? 0 : comment.n_success,
+                numSeen: comment.n_trials,
+                agreementZScore: comment.p_test,
+                repnessScore: comment.repness * comment.repness_test,
+                repful_for: comment.repful_for,
+              }))
+
+              // Render group consensus table with repness-sorted comments
+              return (
+                <div key={groupIndex} className="group-consensus-section">
+                  <h3 className="group-heading">
+                    Group {groupIndex + 1} ({group.points.length} participants)
+                  </h3>
+
+                  {formattedComments.length === 0 ? (
+                    <div>No representative comments found for this group</div>
+                  ) : (
+                    <div className="consensus-chart-container">
+                      <ConsensusBarChart
+                        groups={groups}
+                        comments={formattedComments}
+                        commentTexts={commentTexts}
+                        voteMatrix={voteMatrix}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Group Representative Comments Table - only render when data is available */}
       {formattedRepComments && (
         <div className="rep-comments-table-container">
-          <h2>Group Representative Comments</h2>
+          <h2>Group Representative Comments, By Intensity</h2>
           <p>
             Comments that statistically represent each group's viewpoint
             compared to other groups.
@@ -1449,137 +1585,6 @@ const SimulationContent = () => {
           </div>
         </div>
       )}
-
-      <VoteMatrix
-        voteMatrix={voteMatrix}
-        handleVoteChange={handleVoteChange}
-        selectedGroup={selectedGroup}
-        groups={groups}
-        highlightedComment={highlightedComment}
-        commentTexts={commentTexts}
-      />
-      <div className="side-by-side-container">
-        <PCAProjection
-          pcaProjection={pcaProjection}
-          groups={groups}
-          selectedGroup={selectedGroup}
-        />
-        <GroupAnalysis
-          groups={groups}
-          setSelectedGroup={setSelectedGroup}
-          // voteMatrix={voteMatrix}
-          // consensusScores={consensusScores}
-          // consensusThreshold={consensusThreshold}
-          // setConsensusThreshold={setConsensusThreshold}
-          // highlightComment={highlightComment}
-          selectedGroup={selectedGroup}
-          // kMeansK={kMeansK}
-          // updateKMeansK={updateKMeansK} // Changed from handleKMeansKChange
-          // silhouetteCoefficients={silhouetteCoefficients}
-          // bestK={bestK}
-        />
-      </div>
-
-      {/* Top comments overall - Combined and sorted by max absolute z-score */}
-      <div className="top-overall">
-        <h2>Overall Statistical Consensus</h2>
-
-        {polisStats ? (
-          <div className="stats-consensus-section">
-            {polisStats.consensusComments.agree.length > 0 ||
-            polisStats.consensusComments.disagree.length > 0 ? (
-              <div className="consensus-chart-container">
-                <ConsensusBarChart
-                  groups={groups}
-                  comments={[
-                    ...polisStats.consensusComments.agree.map((comment) => ({
-                      ...comment,
-                      type: "agree",
-                    })),
-                    ...polisStats.consensusComments.disagree.map((comment) => ({
-                      ...comment,
-                      type: "disagree",
-                    })),
-                  ]}
-                  commentTexts={commentTexts}
-                  voteMatrix={voteMatrix}
-                  sortByZScore={true}
-                />
-              </div>
-            ) : (
-              <div>No statistically significant comments found</div>
-            )}
-          </div>
-        ) : (
-          <div className="consensus-chart-container">
-            <ConsensusBarChart
-              groups={groups}
-              comments={topConsensusComments}
-              commentTexts={commentTexts}
-              voteMatrix={voteMatrix}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="top-by-groups">
-        <h2>Group Top Comments</h2>
-        <p>
-          Showing representative comments for each group based on statistical
-          analysis.
-        </p>
-
-        {groups.length === 0 ? (
-          <div>No groups identified yet</div>
-        ) : (
-          <div>
-            {groups.map((group, groupIndex) => {
-              // Use the representative comments for this group instead of consensus data
-              const groupRepComments =
-                repComments && repComments[groupIndex]
-                  ? repComments[groupIndex]
-                  : []
-
-              // Format comments for the ConsensusBarChart component
-              const formattedComments = groupRepComments.map((comment) => ({
-                commentIndex: comment.tid,
-                text:
-                  commentTexts?.[comment.tid]?.text ||
-                  `Comment ${comment.tid + 1}`,
-                numAgrees: comment.n_success,
-                numDisagrees:
-                  comment.repful_for === "agree" ? 0 : comment.n_success,
-                numSeen: comment.n_trials,
-                agreementZScore: comment.p_test,
-                repnessScore: comment.repness * comment.repness_test,
-                repful_for: comment.repful_for,
-              }))
-
-              // Render group consensus table
-              return (
-                <div key={groupIndex} className="group-consensus-section">
-                  <h3 className="group-heading">
-                    Group {groupIndex + 1} ({group.points.length} participants)
-                  </h3>
-
-                  {formattedComments.length === 0 ? (
-                    <div>No representative comments found for this group</div>
-                  ) : (
-                    <div className="consensus-chart-container">
-                      <ConsensusBarChart
-                        groups={groups}
-                        comments={formattedComments}
-                        commentTexts={commentTexts}
-                        voteMatrix={voteMatrix}
-                      />
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
 
       <div className="footer">
         <p>
