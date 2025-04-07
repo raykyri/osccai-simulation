@@ -1432,7 +1432,7 @@ const SimulationContent = () => {
       </div>
 
       <div className="top-by-groups">
-        <h2>Group Representative Comments, By Volume</h2>
+        <h2>Group Representative Comments</h2>
         <p>
           Showing representative comments for each group based on statistical
           analysis.
@@ -1461,9 +1461,8 @@ const SimulationContent = () => {
                 text:
                   commentTexts?.[comment.tid]?.text ||
                   `Comment ${comment.tid + 1}`,
-                numAgrees: comment.n_success,
-                numDisagrees:
-                  comment.repful_for === "agree" ? 0 : comment.n_success,
+                numAgrees: Object.values(groupZScores[comment.tid] || {}).reduce((sum, group) => sum + (group.agrees || 0), 0),
+                numDisagrees: Object.values(groupZScores[comment.tid] || {}).reduce((sum, group) => sum + (group.disagrees || 0), 0),
                 numSeen: comment.n_trials,
                 agreementZScore: comment.p_test,
                 repnessScore: comment.repness * comment.repness_test,
@@ -1499,7 +1498,7 @@ const SimulationContent = () => {
       {/* Group Representative Comments Table - only render when data is available */}
       {formattedRepComments && (
         <div className="rep-comments-table-container">
-          <h2>Group Representative Comments, By Intensity</h2>
+          <h2>Group Representative Comments, Detail</h2>
           <p>
             Comments that statistically represent each group's viewpoint
             compared to other groups.
