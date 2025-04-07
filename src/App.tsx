@@ -1009,6 +1009,7 @@ const SimulationContent = () => {
       {/* Comments table */}
       {usingImportedData && commentTexts && commentTexts.length > 0 && (
         <div className="comments-table-container">
+          <h2>Comments</h2>
           <div className="table-controls">
             <div className="group-selector">
               <label htmlFor="zScoreGroup">Show Data For: </label>
@@ -1056,292 +1057,294 @@ const SimulationContent = () => {
             </div>
           </div>
 
-          <table className="comments-table">
-            <thead>
-              <tr>
-                <th
-                  onClick={() => handleSortChange("id")}
-                  className="sortable-header"
-                >
-                  ID {sortBy === "id" && (sortDirection === "asc" ? "▲" : "▼")}
-                </th>
-                <th>Comment Text</th>
-                <th>Agrees</th>
-                <th>Disagrees</th>
-                <th>Passes</th>
-                <th
-                  onClick={() => handleSortChange("overallZ")}
-                  className="sortable-header"
-                >
-                  Z-Scores (Agree, Disagree)
-                  {sortBy !== "id" &&
-                    sortType === "z-score" &&
-                    (sortDirection === "asc" ? " ▲" : " ▼")}
-                </th>
-                <th
-                  onClick={() => handleSortChange("votes")}
-                  className="sortable-header"
-                >
-                  Votes
-                  {sortBy !== "id" &&
-                    sortType === "vote-count" &&
-                    (sortDirection === "asc" ? " ▲" : " ▼")}
-                </th>
-                <th>Author</th>
-              </tr>
-            </thead>
-            <tbody>
-              {commentTexts
-                .map((comment, index) => {
-                  // Add sorting metadata to each comment
-                  const zScoreData = polisStats?.zScores?.[index]
-                  const maxOverallZScore = getMaxZScore(zScoreData)
-                  const overallVoteCount = getOverallVoteCount(comment)
+          <div className="comments-table-scroll">
+            <table className="comments-table">
+              <thead>
+                <tr>
+                  <th
+                    onClick={() => handleSortChange("id")}
+                    className="sortable-header"
+                  >
+                    ID {sortBy === "id" && (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
+                  <th>Comment Text</th>
+                  <th>Agrees</th>
+                  <th>Disagrees</th>
+                  <th>Passes</th>
+                  <th
+                    onClick={() => handleSortChange("overallZ")}
+                    className="sortable-header"
+                  >
+                    Z-Scores (Agree, Disagree)
+                    {sortBy !== "id" &&
+                      sortType === "z-score" &&
+                      (sortDirection === "asc" ? " ▲" : " ▼")}
+                  </th>
+                  <th
+                    onClick={() => handleSortChange("votes")}
+                    className="sortable-header"
+                  >
+                    Votes
+                    {sortBy !== "id" &&
+                      sortType === "vote-count" &&
+                      (sortDirection === "asc" ? " ▲" : " ▼")}
+                  </th>
+                  <th>Author</th>
+                </tr>
+              </thead>
+              <tbody>
+                {commentTexts
+                  .map((comment, index) => {
+                    // Add sorting metadata to each comment
+                    const zScoreData = polisStats?.zScores?.[index]
+                    const maxOverallZScore = getMaxZScore(zScoreData)
+                    const overallVoteCount = getOverallVoteCount(comment)
 
-                  return {
-                    comment,
-                    index,
-                    maxOverallZScore,
-                    overallVoteCount,
-                    // Add ability to sort by any group's z-score
-                    groupZScores:
-                      groups?.map((_, groupIndex) =>
-                        getGroupMaxZScore(groupZScores, index, groupIndex),
-                      ) || [],
-                    // Add ability to sort by vote count for each group
-                    groupVoteCounts:
-                      groups?.map((_, groupIndex) =>
-                        getGroupVoteCount(groupZScores, index, groupIndex),
-                      ) || [],
-                    // Check if this comment is significant for the selected group
-                    isSignificant: isSignificantForGroup(
-                      zScoreData,
-                      groupZScores,
+                    return {
+                      comment,
                       index,
-                      selectedZScoreGroup,
-                    ),
-                  }
-                })
-                // Filter to only show significant comments if sorting by vote count
-                .filter((item) => {
-                  if (sortType !== "vote-count") return true
-                  return item.isSignificant
-                })
-                .sort((a, b) => {
-                  // Sort based on the selected field, group, and type
-                  if (sortBy === "id") {
-                    // Sort by comment ID
-                    const idA = parseInt(a.comment.id) || 0
-                    const idB = parseInt(b.comment.id) || 0
-                    return sortDirection === "asc" ? idA - idB : idB - idA
-                  } else if (sortBy === "overall") {
-                    if (sortType === "z-score") {
-                      // Sort by overall z-score
-                      return sortDirection === "asc"
-                        ? a.maxOverallZScore - b.maxOverallZScore
-                        : b.maxOverallZScore - a.maxOverallZScore
-                    } else {
-                      // vote-count
-                      // Sort by overall vote count
-                      return sortDirection === "asc"
-                        ? a.overallVoteCount - b.overallVoteCount
-                        : b.overallVoteCount - a.overallVoteCount
+                      maxOverallZScore,
+                      overallVoteCount,
+                      // Add ability to sort by any group's z-score
+                      groupZScores:
+                        groups?.map((_, groupIndex) =>
+                          getGroupMaxZScore(groupZScores, index, groupIndex),
+                        ) || [],
+                      // Add ability to sort by vote count for each group
+                      groupVoteCounts:
+                        groups?.map((_, groupIndex) =>
+                          getGroupVoteCount(groupZScores, index, groupIndex),
+                        ) || [],
+                      // Check if this comment is significant for the selected group
+                      isSignificant: isSignificantForGroup(
+                        zScoreData,
+                        groupZScores,
+                        index,
+                        selectedZScoreGroup,
+                      ),
                     }
-                  } else if (sortBy.startsWith("groupZ-")) {
-                    const groupIndex = parseInt(sortBy.split("-")[1])
+                  })
+                  // Filter to only show significant comments if sorting by vote count
+                  .filter((item) => {
+                    if (sortType !== "vote-count") return true
+                    return item.isSignificant
+                  })
+                  .sort((a, b) => {
+                    // Sort based on the selected field, group, and type
+                    if (sortBy === "id") {
+                      // Sort by comment ID
+                      const idA = parseInt(a.comment.id) || 0
+                      const idB = parseInt(b.comment.id) || 0
+                      return sortDirection === "asc" ? idA - idB : idB - idA
+                    } else if (sortBy === "overall") {
+                      if (sortType === "z-score") {
+                        // Sort by overall z-score
+                        return sortDirection === "asc"
+                          ? a.maxOverallZScore - b.maxOverallZScore
+                          : b.maxOverallZScore - a.maxOverallZScore
+                      } else {
+                        // vote-count
+                        // Sort by overall vote count
+                        return sortDirection === "asc"
+                          ? a.overallVoteCount - b.overallVoteCount
+                          : b.overallVoteCount - a.overallVoteCount
+                      }
+                    } else if (sortBy.startsWith("groupZ-")) {
+                      const groupIndex = parseInt(sortBy.split("-")[1])
 
-                    if (sortType === "z-score") {
-                      // Sort by specific group z-score
-                      const aScore = a.groupZScores[groupIndex] || 0
-                      const bScore = b.groupZScores[groupIndex] || 0
-                      return sortDirection === "asc"
-                        ? aScore - bScore
-                        : bScore - aScore
-                    } else {
-                      // vote-count
-                      // Sort by specific group vote count
-                      const aVotes = a.groupVoteCounts[groupIndex] || 0
-                      const bVotes = b.groupVoteCounts[groupIndex] || 0
-                      return sortDirection === "asc"
-                        ? aVotes - bVotes
-                        : bVotes - aVotes
+                      if (sortType === "z-score") {
+                        // Sort by specific group z-score
+                        const aScore = a.groupZScores[groupIndex] || 0
+                        const bScore = b.groupZScores[groupIndex] || 0
+                        return sortDirection === "asc"
+                          ? aScore - bScore
+                          : bScore - aScore
+                      } else {
+                        // vote-count
+                        // Sort by specific group vote count
+                        const aVotes = a.groupVoteCounts[groupIndex] || 0
+                        const bVotes = b.groupVoteCounts[groupIndex] || 0
+                        return sortDirection === "asc"
+                          ? aVotes - bVotes
+                          : bVotes - aVotes
+                      }
                     }
-                  }
-                  return 0
-                })
-                .map(({ comment, index, isSignificant }) => {
-                  // Original render code with modifications
-                  const zScoreData = polisStats?.zScores?.[index]
+                    return 0
+                  })
+                  .map(({ comment, index, isSignificant }) => {
+                    // Original render code with modifications
+                    const zScoreData = polisStats?.zScores?.[index]
 
-                  return (
-                    <React.Fragment key={index}>
-                      <tr
-                        onClick={() => highlightComment(index)}
-                        className={`${highlightedComment === index ? "highlighted-comment" : ""}
-                        ${sortType === "vote-count" && !isSignificant ? "non-significant-comment" : ""}
-                        ${comment.moderated === "-1" ? "moderated-comment" : ""}`}
-                      >
-                        <td>{comment.id}</td>
-                        <td>
-                          {comment.text}
-                          {comment.moderated === "-1" && (
-                            <span className="moderation-flag">
-                              {" "}
-                              [moderated]
-                            </span>
-                          )}
-                        </td>
-                        <td className="vote-cell">
-                          <div className="vote-count">{comment.agrees}</div>
-                          {(comment.agrees ||
-                            comment.disagrees ||
-                            comment.passes) > 0 && (
-                            <div className="vote-percent">
-                              {Math.round(
-                                (comment.agrees /
-                                  (comment.agrees +
-                                    comment.disagrees +
-                                    (comment.passes || 0))) *
-                                  100,
-                              )}
-                              %
+                    return (
+                      <React.Fragment key={index}>
+                        <tr
+                          onClick={() => highlightComment(index)}
+                          className={`${highlightedComment === index ? "highlighted-comment" : ""}
+                          ${sortType === "vote-count" && !isSignificant ? "non-significant-comment" : ""}
+                          ${comment.moderated === "-1" ? "moderated-comment" : ""}`}
+                        >
+                          <td>{comment.id}</td>
+                          <td>
+                            {comment.text}
+                            {comment.moderated === "-1" && (
+                              <span className="moderation-flag">
+                                {" "}
+                                [moderated]
+                              </span>
+                            )}
+                          </td>
+                          <td className="vote-cell">
+                            <div className="vote-count">{comment.agrees}</div>
+                            {(comment.agrees ||
+                              comment.disagrees ||
+                              comment.passes) > 0 && (
+                              <div className="vote-percent">
+                                {Math.round(
+                                  (comment.agrees /
+                                    (comment.agrees +
+                                      comment.disagrees +
+                                      (comment.passes || 0))) *
+                                    100,
+                                )}
+                                %
+                              </div>
+                            )}
+                          </td>
+                          <td className="vote-cell">
+                            <div className="vote-count">{comment.disagrees}</div>
+                            {(comment.agrees ||
+                              comment.disagrees ||
+                              comment.passes) > 0 && (
+                              <div className="vote-percent">
+                                {Math.round(
+                                  (comment.disagrees /
+                                    (comment.agrees +
+                                      comment.disagrees +
+                                      (comment.passes || 0))) *
+                                    100,
+                                )}
+                                %
+                              </div>
+                            )}
+                          </td>
+                          <td className="vote-cell">
+                            <div className="vote-count">
+                              {comment.passes || 0}
                             </div>
-                          )}
-                        </td>
-                        <td className="vote-cell">
-                          <div className="vote-count">{comment.disagrees}</div>
-                          {(comment.agrees ||
-                            comment.disagrees ||
-                            comment.passes) > 0 && (
-                            <div className="vote-percent">
-                              {Math.round(
-                                (comment.disagrees /
-                                  (comment.agrees +
-                                    comment.disagrees +
-                                    (comment.passes || 0))) *
-                                  100,
-                              )}
-                              %
-                            </div>
-                          )}
-                        </td>
-                        <td className="vote-cell">
-                          <div className="vote-count">
-                            {comment.passes || 0}
-                          </div>
-                          {(comment.agrees ||
-                            comment.disagrees ||
-                            comment.passes) > 0 && (
-                            <div className="vote-percent">
-                              {Math.round(
-                                ((comment.passes || 0) /
-                                  (comment.agrees +
-                                    comment.disagrees +
-                                    (comment.passes || 0))) *
-                                  100,
-                              )}
-                              %
-                            </div>
-                          )}
-                        </td>
+                            {(comment.agrees ||
+                              comment.disagrees ||
+                              comment.passes) > 0 && (
+                              <div className="vote-percent">
+                                {Math.round(
+                                  ((comment.passes || 0) /
+                                    (comment.agrees +
+                                      comment.disagrees +
+                                      (comment.passes || 0))) *
+                                    100,
+                                )}
+                                %
+                              </div>
+                            )}
+                          </td>
 
-                        <td className="group-z-scores-cell">
-                          {/* Overall Z-Scores - highlight if it's the selected group and reduce opacity for others */}
-                          {zScoreData && (
-                            <div
-                              className={`group-z-score-item ${zScoreData.isAgreeSignificant ? "significant-agree" : ""} ${zScoreData.isDisagreeSignificant ? "significant-disagree" : ""} ${selectedZScoreGroup === "overall" ? "selected-group" : "non-selected-group"}`}
-                            >
-                              <strong
-                                className={
-                                  selectedZScoreGroup === "overall"
-                                    ? "current-sort-group"
-                                    : ""
-                                }
+                          <td className="group-z-scores-cell">
+                            {/* Overall Z-Scores - highlight if it's the selected group and reduce opacity for others */}
+                            {zScoreData && (
+                              <div
+                                className={`group-z-score-item ${zScoreData.isAgreeSignificant ? "significant-agree" : ""} ${zScoreData.isDisagreeSignificant ? "significant-disagree" : ""} ${selectedZScoreGroup === "overall" ? "selected-group" : "non-selected-group"}`}
                               >
-                                Overall:
-                              </strong>{" "}
-                              {zScoreData.agreementZScore.toFixed(2)},{" "}
-                              {zScoreData.disagreementZScore.toFixed(2)}
-                            </div>
-                          )}
+                                <strong
+                                  className={
+                                    selectedZScoreGroup === "overall"
+                                      ? "current-sort-group"
+                                      : ""
+                                  }
+                                >
+                                  Overall:
+                                </strong>{" "}
+                                {zScoreData.agreementZScore.toFixed(2)},{" "}
+                                {zScoreData.disagreementZScore.toFixed(2)}
+                              </div>
+                            )}
 
-                          {/* Group-specific Z-Scores - highlight the selected group and reduce opacity for others */}
-                          {groupZScores &&
-                            groups &&
-                            groups.length > 0 &&
-                            groups.map((group, groupIndex) => {
-                              const groupData =
-                                groupZScores[index]?.[groupIndex]
+                            {/* Group-specific Z-Scores - highlight the selected group and reduce opacity for others */}
+                            {groupZScores &&
+                              groups &&
+                              groups.length > 0 &&
+                              groups.map((group, groupIndex) => {
+                                const groupData =
+                                  groupZScores[index]?.[groupIndex]
 
-                              if (!groupData) return null
+                                if (!groupData) return null
 
-                              // Add classes to highlight significant z-scores
-                              const agreeClassName =
-                                groupData.isAgreeSignificant
-                                  ? "significant-agree"
-                                  : ""
-                              const disagreeClassName =
-                                groupData.isDisagreeSignificant
-                                  ? "significant-disagree"
-                                  : ""
-                              const isSelectedGroup =
-                                selectedZScoreGroup === `groupZ-${groupIndex}`
-                                  ? "selected-group"
-                                  : "non-selected-group"
-                              const className =
-                                `group-z-score-item ${agreeClassName} ${disagreeClassName} ${isSelectedGroup}`.trim()
+                                // Add classes to highlight significant z-scores
+                                const agreeClassName =
+                                  groupData.isAgreeSignificant
+                                    ? "significant-agree"
+                                    : ""
+                                const disagreeClassName =
+                                  groupData.isDisagreeSignificant
+                                    ? "significant-disagree"
+                                    : ""
+                                const isSelectedGroup =
+                                  selectedZScoreGroup === `groupZ-${groupIndex}`
+                                    ? "selected-group"
+                                    : "non-selected-group"
+                                const className =
+                                  `group-z-score-item ${agreeClassName} ${disagreeClassName} ${isSelectedGroup}`.trim()
 
-                              return (
-                                <div key={groupIndex} className={className}>
-                                  <strong
-                                    className={
-                                      selectedZScoreGroup ===
-                                      `groupZ-${groupIndex}`
-                                        ? "current-sort-group"
-                                        : ""
-                                    }
-                                  >
-                                    Group {groupIndex + 1}:
-                                  </strong>{" "}
-                                  {groupData.agreementZScore.toFixed(2)},{" "}
-                                  {groupData.disagreementZScore.toFixed(2)}
-                                </div>
-                              )
-                            })}
-                        </td>
+                                return (
+                                  <div key={groupIndex} className={className}>
+                                    <strong
+                                      className={
+                                        selectedZScoreGroup ===
+                                        `groupZ-${groupIndex}`
+                                          ? "current-sort-group"
+                                          : ""
+                                      }
+                                    >
+                                      Group {groupIndex + 1}:
+                                    </strong>{" "}
+                                    {groupData.agreementZScore.toFixed(2)},{" "}
+                                    {groupData.disagreementZScore.toFixed(2)}
+                                  </div>
+                                )
+                              })}
+                          </td>
 
-                        {/* Add vote count column that shows the vote count for the selected group */}
-                        <td className="vote-count-cell">
-                          {selectedZScoreGroup === "overall" ? (
-                            <div className="selected-group">
-                              {comment.agrees + comment.disagrees}
-                            </div>
-                          ) : (
-                            groupZScores &&
-                            (() => {
-                              const groupIndex = parseInt(
-                                selectedZScoreGroup.split("-")[1],
-                              )
-                              const groupData =
-                                groupZScores[index]?.[groupIndex]
-                              if (!groupData) return <div>0</div>
+                          {/* Add vote count column that shows the vote count for the selected group */}
+                          <td className="vote-count-cell">
+                            {selectedZScoreGroup === "overall" ? (
+                              <div className="selected-group">
+                                {comment.agrees + comment.disagrees}
+                              </div>
+                            ) : (
+                              groupZScores &&
+                              (() => {
+                                const groupIndex = parseInt(
+                                  selectedZScoreGroup.split("-")[1],
+                                )
+                                const groupData =
+                                  groupZScores[index]?.[groupIndex]
+                                if (!groupData) return <div>0</div>
 
-                              return (
-                                <div className="selected-group">
-                                  {groupData.agrees + groupData.disagrees}
-                                </div>
-                              )
-                            })()
-                          )}
-                        </td>
+                                return (
+                                  <div className="selected-group">
+                                    {groupData.agrees + groupData.disagrees}
+                                  </div>
+                                )
+                              })()
+                            )}
+                          </td>
 
-                        <td>{comment.author_id}</td>
-                      </tr>
-                    </React.Fragment>
-                  )
-                })}
-            </tbody>
-          </table>
+                          <td>{comment.author_id}</td>
+                        </tr>
+                      </React.Fragment>
+                    )
+                  })}
+              </tbody>
+            </table>
+          </div>
           <div className="table-footer">
             {polisStats &&
               "Statistically significant at 90% confidence (z-score > 1.2816)"}
@@ -1378,66 +1381,68 @@ const SimulationContent = () => {
                 {comments.length === 0 ? (
                   <p>No representative comments identified for this group</p>
                 ) : (
-                  <table className="rep-comments-table">
-                    <thead>
-                      <tr>
-                        <th>Comment</th>
-                        <th>Type</th>
-                        <th>Stats</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comments.map((comment, index) => (
-                        <tr
-                          key={index}
-                          onClick={() => highlightComment(comment.tid)}
-                          className={
-                            highlightedComment === comment.tid
-                              ? "highlighted-comment"
-                              : ""
-                          }
-                        >
-                          <td className="rep-comment-text">
-                            <span className="comment-id">
-                              {comment.commentId}:
-                            </span>{" "}
-                            {comment.commentText}
-                          </td>
-                          <td className={`rep-type ${comment.repful_for}`}>
-                            {comment.repType}
-                            {comment.best_agree && (
-                              <span className="best-agree-tag">
-                                {" "}
-                                (Best agree)
-                              </span>
-                            )}
-                          </td>
-                          <td className="rep-stats">
-                            <div>
-                              Repness: <strong>{comment.repnessScore}</strong>
-                            </div>
-                            <div>
-                              Z-score:{" "}
-                              <strong>{comment.p_test.toFixed(2)}</strong>
-                            </div>
-                            <div>
-                              {comment.repful_for === "agree" ? (
-                                <span>
-                                  {comment.supportPercent}% agree (
-                                  {comment.n_success} of {comment.n_trials})
-                                </span>
-                              ) : (
-                                <span>
-                                  {comment.supportPercent}% disagree (
-                                  {comment.n_success} of {comment.n_trials})
+                  <div className="rep-comments-table-scroll">
+                    <table className="rep-comments-table">
+                      <thead>
+                        <tr>
+                          <th>Comment</th>
+                          <th>Type</th>
+                          <th>Stats</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {comments.map((comment, index) => (
+                          <tr
+                            key={index}
+                            onClick={() => highlightComment(comment.tid)}
+                            className={
+                              highlightedComment === comment.tid
+                                ? "highlighted-comment"
+                                : ""
+                            }
+                          >
+                            <td className="rep-comment-text">
+                              <span className="comment-id">
+                                {comment.commentId}:
+                              </span>{" "}
+                              {comment.commentText}
+                            </td>
+                            <td className={`rep-type ${comment.repful_for}`}>
+                              {comment.repType}
+                              {comment.best_agree && (
+                                <span className="best-agree-tag">
+                                  {" "}
+                                  (Best agree)
                                 </span>
                               )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            </td>
+                            <td className="rep-stats">
+                              <div>
+                                Repness: <strong>{comment.repnessScore}</strong>
+                              </div>
+                              <div>
+                                Z-score:{" "}
+                                <strong>{comment.p_test.toFixed(2)}</strong>
+                              </div>
+                              <div>
+                                {comment.repful_for === "agree" ? (
+                                  <span>
+                                    {comment.supportPercent}% agree (
+                                    {comment.n_success} of {comment.n_trials})
+                                  </span>
+                                ) : (
+                                  <span>
+                                    {comment.supportPercent}% disagree (
+                                    {comment.n_success} of {comment.n_trials})
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             ))}

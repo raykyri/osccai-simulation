@@ -235,7 +235,7 @@ export function selectRepComments(
       )
 
       // Add up to 5 comments total, including best_agree
-      selectedComments = [...selectedComments, ...sortedSufficient].slice(0, 5)
+      selectedComments = [...selectedComments, ...sortedSufficient].slice(0, 20)
 
       // Sort with agrees before disagrees
       finalResult[gid] = agreesBeforeDisagrees(selectedComments)
