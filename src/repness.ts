@@ -124,9 +124,7 @@ function finalizeCommentStats(tid: number, stats: any): FinalizedCommentStats {
     return [...agrees, ...disagrees];
   }
   
-  
-
-  export function selectRepComments(commentStatsWithTid: [number, Record<string, any>][]): Record<string, FinalizedCommentStats[]> {
+  export function selectRepComments(commentStatsWithTid: [number, Record<string, any>][], commentTexts?: any[]): Record<string, FinalizedCommentStats[]> {
     // Initialize result structure with empty arrays for each group ID
     const result: Record<string, {
       best: FinalizedCommentStats | null,
@@ -146,6 +144,11 @@ function finalizeCommentStats(tid: number, stats: any): FinalizedCommentStats {
     
     // Process each comment
     commentStatsWithTid.forEach(([tid, groupsData]) => {
+      // Skip this comment if it's moderated out
+      if (commentTexts && commentTexts[tid] && commentTexts[tid].moderated === '-1') {
+        return; // Skip processing this comment
+      }
+      
       // For each group
       Object.entries(groupsData).forEach(([gid, commentStats]) => {
         const groupResult = result[gid];

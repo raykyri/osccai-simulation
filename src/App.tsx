@@ -606,7 +606,9 @@ const SimulationContent = () => {
 
         return [tid, processedGroupStats];
       });
-      const representativeComments = selectRepComments(commentStatsWithComparatives);
+      
+      // Pass commentTexts to selectRepComments
+      const representativeComments = selectRepComments(commentStatsWithComparatives, commentTexts);
 
       setRepComments(representativeComments);
       console.log('Representative comments calculated:', representativeComments);
