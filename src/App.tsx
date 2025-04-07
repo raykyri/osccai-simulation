@@ -22,13 +22,13 @@ import {
   parseVoteMatrixCSV,
   parseVotesLogCSV,
   parseCommentsCSV,
-} from "./csv.ts"
+} from "./utils/csv.ts"
 import {
   zSig90,
   propTest,
   addComparativeStats,
   selectRepComments,
-} from "./repness.ts"
+} from "./utils/repness.ts"
 
 const SimulationContent = () => {
   const {

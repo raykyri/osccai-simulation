@@ -1,6 +1,10 @@
 import { useCallback } from "react"
-import { pca as legacyPCA } from "../utils/pca.ts"
-import { runPCA, sparsityAwareProjectPtpts, type Matrix } from "../pca.ts"
+import { pca as simplePCA } from "../utils/pca.ts"
+import {
+  runPCA,
+  sparsityAwareProjectPtpts,
+  type Matrix,
+} from "../utils/sparsePCA.ts"
 import { debug } from "../utils/debug.ts"
 
 const usePCA = (voteMatrix) => {

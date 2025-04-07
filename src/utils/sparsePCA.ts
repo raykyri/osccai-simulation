@@ -148,7 +148,7 @@
       const eigval = length(productVector);
       const normed = normalize(productVector);
 
-      if (i === iters - 1 || eigval === lastEigval) {
+      if (i === iters - 1 || Math.abs(eigval - lastEigval) < 1e-10) {
         return normed;
       }
 
@@ -166,8 +166,8 @@
     const dotProduct = dot(xs, ys);
     const dotSelf = dot(xs, xs);
 
-    if (dotSelf === 0) return repeatv(xs.length, 0);
-
+    if (dotSelf < 1e-10) return repeatv(xs.length, 0);
+    
     const coeff = dotProduct / dotSelf;
     return multiplyVector(xs, coeff);
   }
@@ -189,7 +189,8 @@
    */
   function randStartingVec(data: Matrix): Vector {
     const nCols = data[0].length;
-    return Array(nCols).fill(0).map(() => Math.random());
+    const vec = Array(nCols).fill(0).map(() => /*Math.random() - */0.5);
+    return normalize(vec);
   }
 
   /**
