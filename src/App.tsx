@@ -435,8 +435,6 @@ const SimulationContent = () => {
       return;
     }
 
-    console.log('Calculating Polis statistics');
-
     // Create arrays to store top comments for agreement and disagreement
     let topAgreeComments = [];
     let topDisagreeComments = [];
@@ -560,8 +558,6 @@ const SimulationContent = () => {
       return;
     }
 
-    console.log('Calculating representative comments and group-specific z-scores');
-
     try {
       const commentStatsWithTid = [];
       const groupSpecificZScores = {};
@@ -643,7 +639,6 @@ const SimulationContent = () => {
       const representativeComments = selectRepComments(commentStatsWithComparatives, commentTexts);
 
       setRepComments(representativeComments);
-      console.log('Representative comments calculated:', representativeComments);
     } catch (error) {
       console.error('Error calculating representative comments:', error);
     }
@@ -657,8 +652,6 @@ const SimulationContent = () => {
       return;
     }
 
-    console.log('Formatting representative comments for display');
-    
     // Process the data for each group
     const processedData = groups.map((group, groupIndex) => {
       const groupRepComments = repComments[groupIndex] || [];

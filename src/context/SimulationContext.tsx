@@ -154,7 +154,6 @@ export const SimulationProvider = ({ children }) => {
       };
 
     const calculateSilhouetteCoefficients = useCallback((pcaProjection) => {
-        console.log("Calculating Silhouette Coefficients");
         const points = pcaProjection.map(p => [p.x, p.y]);
         const results = findOptimalClusters(points, 2, 9);
         setSilhouetteCoefficients(results);
