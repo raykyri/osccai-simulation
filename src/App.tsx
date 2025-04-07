@@ -228,11 +228,43 @@ const SimulationContent = () => {
 
   useEffect(() => {
     if (voteMatrix && voteMatrix.length > 0) {
-      const newPcaProjection = performPCA();
-      setPcaProjection(newPcaProjection);
-      calculateSilhouetteCoefficients(newPcaProjection);
+      // Create a filtered vote matrix excluding moderated comments
+      const filteredVoteMatrix = [];
+      const moderatedIndices = [];
+      
+      // Identify moderated comments
+      if (commentTexts && commentTexts.length > 0) {
+        commentTexts.forEach((comment, index) => {
+          if (comment.moderated === '-1') {
+            moderatedIndices.push(index);
+          }
+        });
+      }
+      
+      // If there are moderated comments, filter them out from the vote matrix
+      if (moderatedIndices.length > 0) {
+        voteMatrix.forEach(participantVotes => {
+          // Create a new row for each participant, excluding votes for moderated comments
+          const filteredRow = participantVotes.filter((_, commentIndex) => 
+            !moderatedIndices.includes(commentIndex)
+          );
+          filteredVoteMatrix.push(filteredRow);
+        });
+        
+        console.log(`Excluding ${moderatedIndices.length} moderated comments from PCA calculation`);
+        
+        // Run PCA on the filtered vote matrix
+        const newPcaProjection = performPCA(filteredVoteMatrix);
+        setPcaProjection(newPcaProjection);
+        calculateSilhouetteCoefficients(newPcaProjection);
+      } else {
+        // No moderated comments, use the original vote matrix
+        const newPcaProjection = performPCA();
+        setPcaProjection(newPcaProjection);
+        calculateSilhouetteCoefficients(newPcaProjection);
+      }
     }
-  }, [voteMatrix, performPCA, setPcaProjection, calculateSilhouetteCoefficients]);
+  }, [voteMatrix, performPCA, setPcaProjection, calculateSilhouetteCoefficients, commentTexts]);
 
   // Add a new effect to automatically set k to the best value when best k is determined
   useEffect(() => {
