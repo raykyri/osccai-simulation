@@ -979,10 +979,13 @@ const SimulationContent = () => {
                     <React.Fragment key={index}>
                       <tr
                         onClick={() => highlightComment(index)}
-                        className={`${highlightedComment === index ? 'highlighted-comment' : ''} ${sortType === 'vote-count' && !isSignificant ? 'non-significant-comment' : ''}`}>
+                        className={`${highlightedComment === index ? 'highlighted-comment' : ''} 
+                        ${sortType === 'vote-count' && !isSignificant ? 'non-significant-comment' : ''}
+                        ${comment.moderated === '-1' ? 'moderated-comment' : ''}`}>
                         <td>{comment.id}</td>
                         <td>
                           {comment.text}
+                          {comment.moderated === '-1' && <span className="moderation-flag"> [moderated]</span>}
                         </td>
                         <td className="vote-cell">
                           <div className="vote-count">{comment.agrees}</div>

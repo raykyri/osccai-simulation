@@ -780,3 +780,15 @@
     flex: 1 1 100%;
   }
 }
+
+/* Add this to your CSS file */
+.moderated-comment {
+  color: #aaa;
+  font-style: italic;
+}
+
+.moderation-flag {
+  color: #999;
+  font-size: 0.85em;
+  font-style: italic;
+}
