@@ -28,7 +28,7 @@ import {
   ZScoreData,
   GroupZScoreData,
   CommentStats,
-  FinalizedCommentStats
+  FinalizedCommentStats,
 } from "./types"
 
 const DEFAULT_POLIS_REPORT =
@@ -78,7 +78,7 @@ const SimulationContent = () => {
     setBestK,
   } = useSimulation() as any
 
-  // initialization  
+  // initialization
   const [urlError, setUrlError] = useState<string>("")
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -89,19 +89,35 @@ const SimulationContent = () => {
   const [activeTab, setActiveTab] = useState<TabType>("import")
 
   // comment table
-  const [sortBy, setSortBy] = useState<ZScoreGroup | 'id'>("overall")
+  const [sortBy, setSortBy] = useState<ZScoreGroup | "id">("overall")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
-  const [selectedZScoreGroup, setSelectedZScoreGroup] = useState<ZScoreGroup>("overall")
+  const [selectedZScoreGroup, setSelectedZScoreGroup] =
+    useState<ZScoreGroup>("overall")
   const [sortType, setSortType] = useState<SortType>("z-score")
 
   // main stats
   const [polisStats, setPolisStats] = useState<PolisStats | null>(null)
-  const [topConsensusComments, setTopConsensusComments] = useState<ConsensusComment[]>([])
-  const [groupConsensusData, setGroupConsensusData] = useState<GroupConsensusData[]>([])
-  const [groupZScores, setGroupZScores] = useState<Record<number, Record<number, GroupZScoreData>> | null>(null)
-  const [repComments, setRepComments] = useState<Record<string, FinalizedCommentStats[]> | null>(null)
-  const [formattedRepComments, setFormattedRepComments] = useState<Record<string, any> | null>(null)
-  const [participantsMetadata, setParticipantsMetadata] = useState<ParticipantMetadata[]>([])
+  const [topConsensusComments, setTopConsensusComments] = useState<
+    ConsensusComment[]
+  >([])
+  const [groupConsensusData, setGroupConsensusData] = useState<
+    GroupConsensusData[]
+  >([])
+  const [groupZScores, setGroupZScores] = useState<Record<
+    number,
+    Record<number, GroupZScoreData>
+  > | null>(null)
+  const [repComments, setRepComments] = useState<Record<
+    string,
+    FinalizedCommentStats[]
+  > | null>(null)
+  const [formattedRepComments, setFormattedRepComments] = useState<Record<
+    string,
+    any
+  > | null>(null)
+  const [participantsMetadata, setParticipantsMetadata] = useState<
+    ParticipantMetadata[]
+  >([])
 
   const validateAndFetchData = useCallback(() => {
     setUrlError("")
@@ -630,7 +646,10 @@ const SimulationContent = () => {
 
     try {
       const commentStatsWithTid: Array<[number, Record<string, any>]> = []
-      const groupSpecificZScores: Record<number, Record<number, GroupZScoreData>> = {}
+      const groupSpecificZScores: Record<
+        number,
+        Record<number, GroupZScoreData>
+      > = {}
 
       commentTexts.forEach((comment, commentIndex) => {
         const commentStats = {}
