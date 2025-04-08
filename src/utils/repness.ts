@@ -116,8 +116,9 @@ export interface FinalizedCommentStats {
 function finalizeCommentStats(tid: number, stats: any): FinalizedCommentStats {
   const { na, nd, ns, pa, pd, pat, pdt, ra, rd, rat, rdt } = stats
 
-  // Choose between agree/disagree based on which is more representative
-  const isAgreeMoreRep = rat > rdt
+  // Need to add a minimum threshold, e.g., at least 3 votes in that direction
+  const MIN_VOTES = 3;
+  const isAgreeMoreRep = (rat > rdt && na >= MIN_VOTES) || nd < MIN_VOTES;
   const repful_for = isAgreeMoreRep ? "agree" : "disagree"
 
   return {
