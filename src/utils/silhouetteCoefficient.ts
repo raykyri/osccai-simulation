@@ -23,7 +23,7 @@ function calculateSilhouetteCoefficient(data, clusters) {
 
     const a = calculateAverageDistance(point, clusterPoints[clusterIndex], data, pointIndex);
     debug(`Point ${pointIndex}, a: ${a}`);
-    
+
     let b = Infinity;
     clusterPoints.forEach((cluster, index) => {
       if (index !== clusterIndex) {
@@ -61,47 +61,57 @@ function calculateAverageDistance(point, clusterPoints, data, pointIndex) {
   return totalDistance / (clusterPoints.length - 1);
 }
 
-export function findOptimalClusters(points, startK = 2, endK = 9, seed = 0) {
+export function findOptimalClusters(points, startK = 2, endK = 9) {
   debug("Entering findOptimalClusters", { points, startK, endK });
   if (!points || points.length === 0 || !Array.isArray(points[0]) || points[0].length !== 2) {
     debug("Invalid input data for findOptimalClusters", points);
     throw new Error("Invalid input data for findOptimalClusters");
   }
 
+  const minSeed = 0
+  const maxSeed = 25
+
   const maxK = Math.min(endK, points.length);
-  const results = [];
+  const allResults = [];
 
-  for (let k = startK; k <= maxK; k++) {
-    debug(`Attempting kMeansClustering with k=${k}`);
-    try {
-      const clusters = kMeansClustering(points, k, seed);
-      debug(`Clusters returned by kMeansClustering:`, clusters);
+  for (let seed = minSeed; seed <= maxSeed; seed++) {
+    const results = [];
+    for (let k = startK; k <= maxK; k++) {
+      debug(`Attempting kMeansClustering with k=${k}`);
+      try {
+        const clusters = kMeansClustering(points, k, seed);
+        debug(`Clusters returned by kMeansClustering:`, clusters);
 
-      if (!clusters || !Array.isArray(clusters)) {
-        debug(`Invalid clusters returned for k=${k}:`, clusters);
-        continue;
+        if (!clusters || !Array.isArray(clusters)) {
+          debug(`Invalid clusters returned for k=${k}:`, clusters);
+          continue;
+        }
+
+        // Ensure clusters are in the correct format for calculateSilhouetteCoefficient
+        const formattedClusters = clusters.map(c => c.points);
+        debug(`Formatted clusters:`, formattedClusters);
+
+        const silhouetteCoeff = calculateSilhouetteCoefficient(points, formattedClusters);
+        debug(`Silhouette coefficient for k=${k}:`, silhouetteCoeff);
+
+        results.push([k, silhouetteCoeff]);
+      } catch (error) {
+        debug(`Error occurred for k=${k}:`, error);
+        results.push([k, NaN]);
       }
-
-      // Ensure clusters are in the correct format for calculateSilhouetteCoefficient
-      const formattedClusters = clusters.map(c => c.points);
-      debug(`Formatted clusters:`, formattedClusters);
-
-      const silhouetteCoeff = calculateSilhouetteCoefficient(points, formattedClusters);
-      debug(`Silhouette coefficient for k=${k}:`, silhouetteCoeff);
-
-      results.push([k, silhouetteCoeff]);
-    } catch (error) {
-      debug(`Error occurred for k=${k}:`, error);
-      results.push([k, NaN]);
     }
+    allResults.push(results)
   }
 
-  debug("Silhouette Coefficient results:", results);
-  return results;
+  const sums = allResults.map((res) => res.map(((val) => val[1])).reduce((sum, val) => sum + val, 0))
+  const bestIndex = sums.indexOf(Math.max.apply(null, sums))
+
+  console.log("Silhouette Coefficient results:", allResults, "Best:", allResults[bestIndex]);
+  return allResults[bestIndex];
 }
 
 export function getBestK(results) {
-  return results.reduce((best, current) => 
+  return results.reduce((best, current) =>
     current[1] > best[1] ? current : best
   );
 }
