@@ -20,7 +20,7 @@ describe('kMeansClustering', () => {
       clusters: [0, 0, 1, 1]
     });
 
-    const result = kMeansClustering(data, k);
+    const result = kMeansClustering(data, k, 0);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(k);
@@ -35,8 +35,8 @@ describe('kMeansClustering', () => {
   test('calls kmeans with correct parameters', () => {
     const data = [[1, 2], [3, 4], [5, 6]];
     const k = 2;
-    kMeansClustering(data, k);
-    expect(kmeans).toHaveBeenCalledWith(data, k);
+    kMeansClustering(data, k, 0);
+    expect(kmeans).toHaveBeenCalledWith(data, k, 0);
   });
 
   test('handles empty clusters', () => {
@@ -48,7 +48,7 @@ describe('kMeansClustering', () => {
       clusters: [0, 0, 1, 1]
     });
 
-    const result = kMeansClustering(data, k);
+    const result = kMeansClustering(data, k, 0);
 
     expect(result.length).toBe(k);
     expect(result[2].points).toEqual([]);
@@ -69,7 +69,7 @@ describe('kMeansClustering', () => {
       clusters: [0, 1, 2]
     });
 
-    const result = kMeansClustering(data, k);
+    const result = kMeansClustering(data, k, 0);
 
     expect(result.length).toBe(k);
     result.forEach((cluster, index) => {
@@ -86,7 +86,7 @@ describe('kMeansClustering', () => {
       clusters: [0, 0, 1, 1]
     });
 
-    const result = kMeansClustering(data, k);
+    const result = kMeansClustering(data, k, 0);
 
     expect(result[0].points).toEqual([0, 1]);
     expect(result[1].points).toEqual([2, 3]);

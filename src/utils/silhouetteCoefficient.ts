@@ -61,7 +61,7 @@ function calculateAverageDistance(point, clusterPoints, data, pointIndex) {
   return totalDistance / (clusterPoints.length - 1);
 }
 
-export function findOptimalClusters(points, startK = 2, endK = 9) {
+export function findOptimalClusters(points, startK = 2, endK = 9, seed = 0) {
   debug("Entering findOptimalClusters", { points, startK, endK });
   if (!points || points.length === 0 || !Array.isArray(points[0]) || points[0].length !== 2) {
     debug("Invalid input data for findOptimalClusters", points);
@@ -74,7 +74,7 @@ export function findOptimalClusters(points, startK = 2, endK = 9) {
   for (let k = startK; k <= maxK; k++) {
     debug(`Attempting kMeansClustering with k=${k}`);
     try {
-      const clusters = kMeansClustering(points, k);
+      const clusters = kMeansClustering(points, k, seed);
       debug(`Clusters returned by kMeansClustering:`, clusters);
 
       if (!clusters || !Array.isArray(clusters)) {

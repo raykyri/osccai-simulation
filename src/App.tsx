@@ -9,8 +9,9 @@ import GroupAnalysis from "./components/GroupAnalysis.tsx"
 import SimulationControls from "./components/SimulationControls.tsx"
 import useVoteMatrix from "./hooks/useVoteMatrix.ts"
 import usePCA from "./hooks/usePCA.ts"
-import useGroupIdentification from "./hooks/useGroupIdentification.ts"
 import { debug } from "./utils/debug.ts"
+import { getBestK } from "./utils/silhouetteCoefficient.ts"
+import { kMeansClustering } from "./utils/kMeansClustering.ts"
 
 import { ConsensusBarChart } from "./components/ConsensusBarChart.tsx"
 import "./App.css"
@@ -57,7 +58,9 @@ const SimulationContent = () => {
     updateKMeansK,
     silhouetteCoefficients,
     bestK,
-    calculateSilhouetteCoefficients,
+    findOptimalClusters,
+    setSilhouetteCoefficients,
+    setBestK,
   } = useSimulation() as any
 
   const [dataUrl, setDataUrl] = useState(DEFAULT_POLIS_REPORT)
@@ -243,7 +246,6 @@ const SimulationContent = () => {
   )
 
   const performPCA = usePCA(voteMatrix)
-  const identifyGroups = useGroupIdentification(pcaProjection, kMeansK)
 
   // load default data on initialization
   useEffect(() => {
@@ -282,52 +284,60 @@ const SimulationContent = () => {
       }
 
       // If there are moderated comments, filter them out from the vote matrix
-      if (moderatedIndices.length > 0) {
-        voteMatrix.forEach((participantVotes) => {
-          // Create a new row for each participant, excluding votes for moderated comments
-          const filteredRow = participantVotes.filter(
-            (_, commentIndex) => !moderatedIndices.includes(commentIndex),
-          )
-          filteredVoteMatrix.push(filteredRow)
-        })
-
-        console.log(
-          `Excluding ${moderatedIndices.length} moderated comments from PCA calculation`,
+      voteMatrix.forEach((participantVotes) => {
+        // Create a new row for each participant, excluding votes for moderated comments
+        const filteredRow = participantVotes.filter(
+          (_, commentIndex) => !moderatedIndices.includes(commentIndex),
         )
+        filteredVoteMatrix.push(filteredRow)
+      })
 
-        // Run PCA on the filtered vote matrix
-        const newPcaProjection = performPCA(filteredVoteMatrix)
-        setPcaProjection(newPcaProjection)
-        calculateSilhouetteCoefficients(newPcaProjection)
-      } else {
-        // No moderated comments, use the original vote matrix
-        const newPcaProjection = performPCA()
-        setPcaProjection(newPcaProjection)
-        calculateSilhouetteCoefficients(newPcaProjection)
-      }
+      console.log(
+        `Excluding ${moderatedIndices.length} moderated comments from PCA calculation`,
+      )
+
+      // Run PCA on the filtered vote matrix
+      const newPcaProjection = performPCA(filteredVoteMatrix)
+      setPcaProjection(newPcaProjection)
+
+      // Calculate silhouette coefficients of the k-means clustering groups
+      const points = newPcaProjection.map((p) => [p.x, p.y])
+      const results = findOptimalClusters(points, 2, 9)
+      setSilhouetteCoefficients(results)
+      const [newBestK] = getBestK(results)
+      setBestK(newBestK)
+      updateKMeansK(newBestK)
     }
   }, [
     voteMatrix,
     performPCA,
+    setGroups,
     setPcaProjection,
-    calculateSilhouetteCoefficients,
+    findOptimalClusters,
+    setSilhouetteCoefficients,
+    setBestK,
     commentTexts,
   ])
 
-  // Add a new effect to automatically set k to the best value when best k is determined
   useEffect(() => {
-    if (bestK !== null && bestK > 0 && voteMatrix && voteMatrix.length !== 0) {
-      console.log(`Setting k-means k to best value: ${bestK}`)
-      updateKMeansK(bestK)
+    if (
+      !pcaProjection ||
+      pcaProjection.length === 0 ||
+      kMeansK === null ||
+      kMeansK === 0
+    ) {
+      return
     }
-  }, [bestK, updateKMeansK])
 
-  useEffect(() => {
-    if (pcaProjection && pcaProjection.length > 0) {
-      const newGroups = identifyGroups()
-      setGroups(newGroups)
-    }
-  }, [pcaProjection, identifyGroups, setGroups])
+    // Run k-means clustering on the PCA, bestK should alread be populated and nonzero
+    const seed = 0
+    const points = pcaProjection.map((p) => [p.x, p.y])
+    const newGroups = kMeansClustering(points, kMeansK, seed).map((group) => ({
+      centroid: group.centroid,
+      points: group.points.map((index) => pcaProjection[index].id),
+    }))
+    setGroups(newGroups)
+  }, [kMeansClustering, pcaProjection, kMeansK])
 
   // overall consensus
   useEffect(() => {
@@ -1461,8 +1471,12 @@ const SimulationContent = () => {
                 text:
                   commentTexts?.[comment.tid]?.text ||
                   `Comment ${comment.tid + 1}`,
-                numAgrees: Object.values(groupZScores[comment.tid] || {}).reduce((sum, group) => sum + (group.agrees || 0), 0),
-                numDisagrees: Object.values(groupZScores[comment.tid] || {}).reduce((sum, group) => sum + (group.disagrees || 0), 0),
+                numAgrees: Object.values(
+                  groupZScores[comment.tid] || {},
+                ).reduce((sum, group) => sum + (group.agrees || 0), 0),
+                numDisagrees: Object.values(
+                  groupZScores[comment.tid] || {},
+                ).reduce((sum, group) => sum + (group.disagrees || 0), 0),
                 numSeen: comment.n_trials,
                 agreementZScore: comment.p_test,
                 repnessScore: comment.repness * comment.repness_test,

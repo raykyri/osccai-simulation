@@ -153,14 +153,6 @@ export const SimulationProvider = ({ children }) => {
         localStorage.removeItem('osccaiSimulationState');
       };
 
-    const calculateSilhouetteCoefficients = useCallback((pcaProjection) => {
-        const points = pcaProjection.map(p => [p.x, p.y]);
-        const results = findOptimalClusters(points, 2, 9);
-        setSilhouetteCoefficients(results);
-        const [newBestK] = getBestK(results);
-        setBestK(newBestK);
-    }, []);
-
     // Add a new function to update kMeansK without recalculating
     const updateKMeansK = useCallback((newK) => {
         setKMeansK(newK);
@@ -200,7 +192,9 @@ export const SimulationProvider = ({ children }) => {
             updateKMeansK,
             silhouetteCoefficients,
             bestK,
-            calculateSilhouetteCoefficients,
+            findOptimalClusters,
+            setSilhouetteCoefficients,
+            setBestK,
         }}>
             {children}
         </SimulationContext.Provider>
