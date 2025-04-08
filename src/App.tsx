@@ -15,6 +15,21 @@ import { kMeansClustering } from "./utils/kMeansClustering.ts"
 
 import { ConsensusBarChart } from "./components/ConsensusBarChart.tsx"
 import "./App.css"
+import {
+  SortDirection,
+  SortType,
+  TabType,
+  ZScoreGroup,
+  Comment,
+  ParticipantMetadata,
+  ConsensusComment,
+  GroupConsensusData,
+  PolisStats,
+  ZScoreData,
+  GroupZScoreData,
+  CommentStats,
+  FinalizedCommentStats
+} from "./types"
 
 const DEFAULT_POLIS_REPORT =
   "https://pol.is/api/v3/reportExport/r3nhe9auvzhr36dwaytsk/participant-votes.csv"
@@ -63,37 +78,30 @@ const SimulationContent = () => {
     setBestK,
   } = useSimulation() as any
 
-  const [dataUrl, setDataUrl] = useState(DEFAULT_POLIS_REPORT)
-  const [urlError, setUrlError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [usingImportedData, setUsingImportedData] = useState(false)
-  const [commentTexts, setCommentTexts] = useState([])
-  const [topConsensusComments, setTopConsensusComments] = useState([])
-  const [groupConsensusData, setGroupConsensusData] = useState([])
+  // initialization  
+  const [urlError, setUrlError] = useState<string>("")
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  // Add a state to track initialization
-  const [initialized, setInitialized] = useState(false)
+  const [initialized, setInitialized] = useState<boolean>(false)
+  const [dataUrl, setDataUrl] = useState<string>(DEFAULT_POLIS_REPORT)
+  const [usingImportedData, setUsingImportedData] = useState<boolean>(false)
+  const [commentTexts, setCommentTexts] = useState<Comment[]>([])
+  const [activeTab, setActiveTab] = useState<TabType>("import")
 
-  const [activeTab, setActiveTab] = useState("import") // <'import' | 'random'>
+  // comment table
+  const [sortBy, setSortBy] = useState<ZScoreGroup | 'id'>("overall")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
+  const [selectedZScoreGroup, setSelectedZScoreGroup] = useState<ZScoreGroup>("overall")
+  const [sortType, setSortType] = useState<SortType>("z-score")
 
-  const [votesLogData, setVotesLogData] = useState(null)
-
-  const [polisStats, setPolisStats] = useState(null)
-
-  const [commentZScores, setCommentZScores] = useState({})
-
-  const [repComments, setRepComments] = useState(null)
-
-  const [groupZScores, setGroupZScores] = useState(null)
-
-  const [sortBy, setSortBy] = useState("overall") // 'overall', 'groupZ-N', 'id'
-  const [sortDirection, setSortDirection] = useState("desc")
-  const [selectedZScoreGroup, setSelectedZScoreGroup] = useState("overall")
-  const [sortType, setSortType] = useState("z-score") // 'z-score' or 'vote-count'
-
-  const [formattedRepComments, setFormattedRepComments] = useState(null)
-
-  const [participantsMetadata, setParticipantsMetadata] = useState([])
+  // main stats
+  const [polisStats, setPolisStats] = useState<PolisStats | null>(null)
+  const [topConsensusComments, setTopConsensusComments] = useState<ConsensusComment[]>([])
+  const [groupConsensusData, setGroupConsensusData] = useState<GroupConsensusData[]>([])
+  const [groupZScores, setGroupZScores] = useState<Record<number, Record<number, GroupZScoreData>> | null>(null)
+  const [repComments, setRepComments] = useState<Record<string, FinalizedCommentStats[]> | null>(null)
+  const [formattedRepComments, setFormattedRepComments] = useState<Record<string, any> | null>(null)
+  const [participantsMetadata, setParticipantsMetadata] = useState<ParticipantMetadata[]>([])
 
   const validateAndFetchData = useCallback(() => {
     setUrlError("")
@@ -207,7 +215,6 @@ const SimulationContent = () => {
 
         // Set the updated vote matrix with nulls for unvoted items
         setVoteMatrix(updatedVoteMatrix)
-        setVotesLogData(votesLogData)
         setCommentTexts(
           commentData.map((comment, index) => {
             let passes = 0
@@ -622,8 +629,8 @@ const SimulationContent = () => {
     }
 
     try {
-      const commentStatsWithTid = []
-      const groupSpecificZScores = {}
+      const commentStatsWithTid: Array<[number, Record<string, any>]> = []
+      const groupSpecificZScores: Record<number, Record<number, GroupZScoreData>> = {}
 
       commentTexts.forEach((comment, commentIndex) => {
         const commentStats = {}
@@ -746,7 +753,9 @@ const SimulationContent = () => {
         }
       })
 
-      formattedComments.sort((a, b) => b.repnessScore - a.repnessScore)
+      formattedComments.sort((a: CommentStats, b: CommentStats) => {
+        return parseInt(b.repnessScore, 10) - parseInt(a.repnessScore, 10)
+      })
 
       return {
         groupIndex,
@@ -1386,16 +1395,7 @@ const SimulationContent = () => {
         <GroupAnalysis
           groups={groups}
           setSelectedGroup={setSelectedGroup}
-          // voteMatrix={voteMatrix}
-          // consensusScores={consensusScores}
-          // consensusThreshold={consensusThreshold}
-          // setConsensusThreshold={setConsensusThreshold}
-          // highlightComment={highlightComment}
           selectedGroup={selectedGroup}
-          // kMeansK={kMeansK}
-          // updateKMeansK={updateKMeansK} // Changed from handleKMeansKChange
-          // silhouetteCoefficients={silhouetteCoefficients}
-          // bestK={bestK}
         />
       </div>
 

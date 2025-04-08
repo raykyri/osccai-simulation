@@ -1,3 +1,5 @@
+import { FinalizedCommentStats } from "../types"
+
 // Helper function to check if z-score is significant at 90% confidence
 export function zSig90(zVal: number): boolean {
   return zVal > 1.2816
@@ -98,18 +100,6 @@ export function addComparativeStats(inStats: any, restStats: any[]): any {
     rat,
     rdt,
   }
-}
-
-export interface FinalizedCommentStats {
-  tid: number
-  n_success: number
-  n_trials: number
-  p_success: number
-  p_test: number
-  repness: number
-  repness_test: number
-  repful_for: "agree" | "disagree"
-  best_agree?: boolean // Optional flag for best agree comment
 }
 
 // Finalize comment stats for client consumption

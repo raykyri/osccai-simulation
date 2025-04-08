@@ -16,7 +16,7 @@ function kMeansClustering(data, k, seed) {
   const result = kmeans(data, k, { seed });
 
   // Create an array to store the points for each cluster
-  const clusters = Array(k).fill().map(() => []);
+  const clusters = Array(k).fill(null).map(() => []);
 
   // Assign each point to its cluster
   result.clusters.forEach((clusterIndex, pointIndex) => {

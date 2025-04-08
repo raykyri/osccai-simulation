@@ -11,7 +11,7 @@ export function pca(X) {
     const centeredX = X.map(row => row.map((x, j) => x - mean[j]));
 
     // Compute covariance matrix
-    const cov = Array(n).fill().map(() => Array(n).fill(0));
+    const cov = Array(n).fill(null).map(() => Array(n).fill(0));
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         cov[i][j] = centeredX.reduce((sum, row) => sum + row[i] * row[j], 0) / (m - 1);
@@ -29,7 +29,7 @@ export function pca(X) {
     function powerIteration(A, numIterations = 100) {
       const multiplyAb = (A, b) => A.map(row => row.reduce((sum, a, j) => sum + a * b[j], 0));
 
-      let b = Array(A.length).fill().map(() => 0.5);
+      let b = Array(A.length).fill(null).map(() => 0.5);
       for (let i = 0; i < numIterations; i++) {
         const Ab = multiplyAb(A, b);
         const norm = Math.sqrt(Ab.reduce((sum, x) => sum + x * x, 0));

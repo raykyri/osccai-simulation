@@ -7,7 +7,7 @@ const useVoteMatrix = (participants, comments, agreePercentage, disagreePercenta
     const generateRandomVoteMatrix = useCallback(() => {
         const rows = participants;
         const cols = comments;
-        let newMatrix = Array(rows).fill().map(() => Array(cols).fill(0));
+        let newMatrix = Array(rows).fill(null).map(() => Array(cols).fill(0));
 
         // Ensure groupSizes is an array
         const safeGroupSizes = Array.isArray(groupSizes) ? groupSizes : [];

@@ -6,6 +6,7 @@ if (typeof process !== 'undefined' && process.argv) {
 } else {
   // For browser environment, you can set DEBUG manually or based on some condition
   // For example, you could use a URL parameter or a global variable
+  // @ts-ignore
   DEBUG = window.location.search.includes('debug=true') || window.DEBUG === true;
 }
 
