@@ -1,6 +1,8 @@
-# Polis Simulation
+# Polis Analysis & Simulation
 
-This application simulates the core functionality of the "Collective Constitution Creator" process (adapted from [Pol.is](https://pol.is/), a real-time survey and opinion analysis tool), part of the Open-Source Collective Constitutional AI project. It demonstrates how this tool analyzes participant opinions on various comments to identify consensus groups, and how these groups can be used to create a constitution.
+This application implements the core analysis algorithms used by the Polis real-time survey and opinion analysis tool, running as a TypeScript effect pipeline in the browser. It has been tested against existing CC-licensed Polis data and runs on surveys of 100s-1000s of participants, with 100s of comments, in 300ms-1s.
+
+The tool is based on the PCA, k-means clustering, and visualization implemented in the "Collective Constitution Creator" by cip.org.
 
 ## Features
 
@@ -12,7 +14,7 @@ This application simulates the core functionality of the "Collective Constitutio
 - Interactive Vote Matrix and PCA Projection
   - (new) Updated to handle pass vs. non-votes
 - (new) Identify top comments for the overall group (using z-score)
-- (new) Identify top comments for k-means clustering groups (incomplete)
+- (new) Identify top comments for k-means clustering groups
 - (new) Visualize top comments, plus full list of comments with stats
 - (new) Express server and CORS proxy for loading reports from Polis
 - (new) Parse and reconcile CSV exports from existing conversations
